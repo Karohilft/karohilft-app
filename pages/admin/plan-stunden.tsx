@@ -25,6 +25,7 @@ export default function AdminStundenplan() {
   const [loading, setLoading] = useState(true)
   const [filterCaregiver, setFilterCaregiver] = useState('')
   const [filterClient, setFilterClient] = useState('')
+  const [filterMonth, setFilterMonth] = useState('')
 
   useEffect(() => {
     getSupabase().auth.getSession().then(({ data }) => {
@@ -33,19 +34,18 @@ export default function AdminStundenplan() {
         .from('activities')
         .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver:caregivers(name),client:clients(name)')
         .order('datum', { ascending: false })
-        .then(({ data: d }) => {
-          setEntries((d as any) || [])
-          setLoading(false)
-        })
+        .then(({ data: d }) => { setEntries((d as any) || []); setLoading(false) })
     })
   }, [router])
 
   const caregiverNames = [...new Set(entries.map(e => (e.caregiver as any)?.name).filter(Boolean))].sort()
   const clientNames = [...new Set(entries.map(e => (e.client as any)?.name).filter(Boolean))].sort()
+  const months = [...new Set(entries.map(e => e.datum?.substring(0, 7)).filter(Boolean))].sort().reverse()
 
   const filtered = entries.filter(e => {
     if (filterCaregiver && (e.caregiver as any)?.name !== filterCaregiver) return false
     if (filterClient && (e.client as any)?.name !== filterClient) return false
+    if (filterMonth && !e.datum?.startsWith(filterMonth)) return false
     return true
   })
 
@@ -64,7 +64,7 @@ export default function AdminStundenplan() {
           <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>Drucken</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
           <select value={filterCaregiver} onChange={e => setFilterCaregiver(e.target.value)} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
             <option value="">Alle Betreuer</option>
             {caregiverNames.map(n => <option key={n} value={n}>{n}</option>)}
@@ -72,6 +72,10 @@ export default function AdminStundenplan() {
           <select value={filterClient} onChange={e => setFilterClient(e.target.value)} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
             <option value="">Alle Klienten</option>
             {clientNames.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
+            <option value="">Alle Monate</option>
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
 
@@ -89,20 +93,20 @@ export default function AdminStundenplan() {
                           {(e.caregiver as any)?.name || '–'} → {(e.client as any)?.name || '–'}
                         </div>
                         <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 3 }}>
-                          {e.datum} &nbsp;·&nbsp; {e.zeit_von} – {e.zeit_bis}
+                          {e.datum} · {e.zeit_von} – {e.zeit_bis}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--rose)' }}>{h}h</div>
-                        {e.unterschrift && <img src={e.unterschrift} alt="Unterschrift" style={{ height: 32, marginTop: 4, opacity: 0.7 }} />}
+                        {e.unterschrift && <img src={e.unterschrift} alt="Unterschrift" style={{ height: 28, marginTop: 4, opacity: 0.6 }} />}
                       </div>
                     </div>
                   </div>
                 )
               })}
               <div style={{ marginTop: 16, padding: '14px 18px', background: 'rgba(196,124,90,.08)', borderRadius: 'var(--r-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 600, color: 'var(--dark)' }}>Gesamt {filterCaregiver || filterClient ? '(gefiltert)' : ''}:</span>
-                <span style={{ fontWeight: 700, fontSize: 20, color: 'var(--rose)' }}>{Math.round(totalHours * 10) / 10}h</span>
+                <span style={{ fontWeight: 600, color: 'var(--dark)' }}>Gesamt{filterCaregiver || filterClient || filterMonth ? ' (gefiltert)' : ''}:</span>
+                <span style={{ fontWeight: 700, fontSize: 22, color: 'var(--rose)' }}>{Math.round(totalHours * 10) / 10}h</span>
               </div>
             </div>
           )}
