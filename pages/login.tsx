@@ -26,8 +26,27 @@ export default function LoginPage() {
     e.preventDefault()
     setBusy(true)
     setErr(null)
-    const { error } = await getSupabase().auth.signInWithPassword({ email, password })
-    if (error) { setBusy(false); setErr(error.message); return }
+
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Verbindung zu Supabase fehlgeschlagen (Timeout). Bitte versuche es erneut.')), 10000)
+      )
+      const result = await Promise.race([
+        getSupabase().auth.signInWithPassword({ email, password }),
+        timeout
+      ]) as Awaited<ReturnType<typeof getSupabase>['auth']['signInWithPassword']>
+
+      if (result.error) {
+        setBusy(false)
+        setErr(result.error.message)
+        return
+      }
+    } catch (e: any) {
+      setBusy(false)
+      setErr(e.message || 'Unbekannter Fehler')
+      return
+    }
+
     const nextRaw = (router.query.next as string) || '/admin'
     let target: string
     try { target = decodeURIComponent(nextRaw) } catch { target = nextRaw }
