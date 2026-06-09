@@ -28,13 +28,11 @@ export default function LoginPage() {
     setErr(null)
 
     try {
+      const authPromise = getSupabase().auth.signInWithPassword({ email, password })
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout nach 10s – Supabase nicht erreichbar')), 10000)
       )
-      const result = await Promise.race([
-        getSupabase().auth.signInWithPassword({ email, password }),
-        timeout
-      ]) as Awaited<ReturnType<typeof getSupabase>['auth']['signInWithPassword']>
+      const result = await Promise.race([authPromise, timeout])
 
       if (result.error) {
         setBusy(false)
