@@ -29,7 +29,7 @@ export default function LoginPage() {
 
     try {
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Verbindung zu Supabase fehlgeschlagen (Timeout). Bitte versuche es erneut.')), 10000)
+        setTimeout(() => reject(new Error('Timeout nach 10s – Supabase nicht erreichbar')), 10000)
       )
       const result = await Promise.race([
         getSupabase().auth.signInWithPassword({ email, password }),
@@ -59,6 +59,8 @@ export default function LoginPage() {
     setBusy(false)
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'NICHT GESETZT'
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
@@ -77,6 +79,9 @@ export default function LoginPage() {
           </form>
           <p style={{ marginTop: 16, fontSize: 14, color: 'var(--mid)', textAlign: 'center' }}>
             <a href="/forgot-password" style={{ color: 'var(--rose)' }}>Passwort vergessen?</a>
+          </p>
+          <p style={{ marginTop: 8, fontSize: 10, color: '#aaa', textAlign: 'center', wordBreak: 'break-all' }}>
+            DB: {supabaseUrl}
           </p>
         </div>
       </div>
