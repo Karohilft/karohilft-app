@@ -12,7 +12,7 @@ export default function Home() {
       if (res.ok) {
         router.replace('/admin')
       } else {
-        router.replace('/eintrag')
+        router.replace('/betreuer')
       }
     })
   }, [router])
