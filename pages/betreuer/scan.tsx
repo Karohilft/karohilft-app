@@ -15,62 +15,42 @@ export default function ScanPage() {
   }, [router])
 
   useEffect(() => {
-    let stream: MediaStream | null = null
-    let interval: ReturnType<typeof setInterval> | null = null
+    let stopped = false
 
-    async function startCamera() {
+    async function start() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          await videoRef.current.play()
-          setScanning(true)
-        }
+        const { BrowserQRCodeReader } = await import('@zxing/browser')
+        const reader = new BrowserQRCodeReader()
+        const devices = await BrowserQRCodeReader.listVideoInputDevices()
+        // Rückkamera bevorzugen
+        const device = devices.find(d => /back|rear|environment/i.test(d.label)) ?? devices[devices.length - 1]
+        const deviceId = device?.deviceId
+
+        setScanning(true)
+
+        reader.decodeFromVideoDevice(deviceId ?? undefined, videoRef.current!, (result, err, controls) => {
+          if (stopped) { controls.stop(); return }
+          if (!result) return
+          const url = result.getText()
+          const match = url.match(/[?&]k=([^&]+)/)
+          if (match) {
+            stopped = true
+            controls.stop()
+            router.replace(`/eintrag?k=${match[1]}`)
+          }
+        })
       } catch {
-        setError('Kamerazugriff verweigert. Bitte Kamera-Berechtigung erlauben.')
+        setError('Kamerazugriff verweigert. Bitte Kamera-Berechtigung in den Einstellungen erlauben.')
       }
     }
 
-    async function scanFrame() {
-      const video = videoRef.current
-      if (!video || video.readyState < 2) return
-      try {
-        const canvas = document.createElement('canvas')
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-        ctx.drawImage(video, 0, 0)
-        // @ts-ignore
-        if ('BarcodeDetector' in window) {
-          // @ts-ignore
-          const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-          const codes = await detector.detect(canvas)
-          if (codes.length > 0) {
-            const url = codes[0].rawValue
-            const match = url.match(/[?&]k=([^&]+)/)
-            if (match) {
-              if (stream) stream.getTracks().forEach(t => t.stop())
-              if (interval) clearInterval(interval)
-              router.replace(`/eintrag?k=${match[1]}`)
-            }
-          }
-        }
-      } catch { /* ignore */ }
-    }
-
-    startCamera()
-    interval = setInterval(scanFrame, 500)
-
-    return () => {
-      if (stream) stream.getTracks().forEach(t => t.stop())
-      if (interval) clearInterval(interval)
-    }
+    start()
+    return () => { stopped = true }
   }, [router])
 
   return (
     <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ position: 'relative', width: '100%', maxWidth: 400 }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 420 }}>
         {error ? (
           <div style={{ background: 'var(--cream)', borderRadius: 'var(--r-lg)', padding: 32, margin: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📷</div>
@@ -85,9 +65,8 @@ export default function ScanPage() {
               muted
               style={{ width: '100%', display: 'block', borderRadius: 12 }}
             />
-            {/* Fadenkreuz */}
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <div style={{ width: 200, height: 200, border: '3px solid rgba(255,255,255,0.8)', borderRadius: 16, boxShadow: '0 0 0 2000px rgba(0,0,0,0.4)' }} />
+              <div style={{ width: 220, height: 220, border: '3px solid rgba(255,255,255,0.85)', borderRadius: 16, boxShadow: '0 0 0 2000px rgba(0,0,0,0.45)' }} />
             </div>
             <p style={{ color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginTop: 16, fontSize: 14, padding: '0 20px' }}>
               {scanning ? 'QR-Code der Klientenkarte in den Rahmen halten' : 'Kamera startet…'}
