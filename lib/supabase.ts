@@ -1,8 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-let _client: ReturnType<typeof createClient> | null = null
+let _client: SupabaseClient | null = null
 
-export function getSupabase() {
+export function getSupabase(): SupabaseClient {
+  if (typeof window === 'undefined') {
+    // Server-side / build-time: never call createClient here
+    throw new Error('getSupabase() must only be called client-side (inside useEffect)')
+  }
   if (!_client) {
     _client = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
