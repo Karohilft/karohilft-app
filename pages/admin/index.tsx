@@ -7,8 +7,11 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getSupabase().auth.getSession().then(({ data }) => {
+    getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
+      const token = data.session.access_token
+      const res = await fetch('/api/admin/me', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) { router.replace('/'); return }
       setLoading(false)
     })
   }, [router])

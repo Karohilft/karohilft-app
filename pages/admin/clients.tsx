@@ -25,6 +25,7 @@ export default function AdminClients() {
   useEffect(() => {
     getSupabase().auth.getSession().then(({ data }) => {
       if (!data.session) { router.replace('/login'); return }
+      fetch('/api/admin/me', { headers: { Authorization: `Bearer ${data.session.access_token}` } }).then(r => { if (!r.ok) router.replace('/') })
       load()
     })
   }, [router])

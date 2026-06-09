@@ -30,6 +30,7 @@ export default function AdminStundenplan() {
   useEffect(() => {
     getSupabase().auth.getSession().then(({ data }) => {
       if (!data.session) { router.replace('/login'); return }
+      fetch('/api/admin/me', { headers: { Authorization: `Bearer ${data.session.access_token}` } }).then(r => { if (!r.ok) router.replace('/') })
       getSupabase()
         .from('activities')
         .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver:caregivers(name),client:clients(name)')

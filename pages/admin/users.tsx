@@ -21,6 +21,7 @@ export default function AdminUsers() {
   useEffect(() => {
     getSupabase().auth.getSession().then(({ data }) => {
       if (!data.session) { router.replace('/login'); return }
+      fetch('/api/admin/me', { headers: { Authorization: `Bearer ${data.session.access_token}` } }).then(r => { if (!r.ok) router.replace('/') })
       load()
     })
   }, [router])
@@ -38,6 +39,12 @@ export default function AdminUsers() {
   async function del(id: string) {
     if (!confirm('Betreuer löschen?')) return
     await getSupabase().from('caregivers').delete().eq('id', id)
+    await load()
+  }
+
+  async function toggleRole(id: string, currentRole: string) {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin'
+    await getSupabase().from('caregivers').update({ role: newRole }).eq('id', id)
     await load()
   }
 
@@ -77,10 +84,14 @@ export default function AdminUsers() {
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Betreuer anzulegen.</span></div>
           : caregivers.map(c => (
             <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</span>
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.role === 'admin' ? 'var(--rose)' : 'var(--sage)', color: '#fff' }}>{c.role === 'admin' ? 'Admin' : 'Betreuer'}</span>
+                  <button
+                    onClick={() => toggleRole(c.id, c.role)}
+                    title="Rolle ändern"
+                    style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.role === 'admin' ? 'var(--rose)' : 'var(--sage)', color: '#fff', border: 'none', cursor: 'pointer', lineHeight: 1.4 }}
+                  >{c.role === 'admin' ? 'Admin' : 'Betreuer'}</button>
                 </div>
                 {c.email && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{c.email}</div>}
                 {c.phone && <div style={{ fontSize: 14, color: 'var(--mid)' }}>{c.phone}</div>}
