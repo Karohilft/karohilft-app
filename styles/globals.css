@@ -1,0 +1,198 @@
+:root{
+  --kh-font-base: 18px;
+  --kh-line: 1.6;
+
+  /* Kachel */
+  --kh-card-max: 720px;
+  --kh-card-side: 20px;
+  --kh-card-pad-y: 48px;
+  --kh-card-pad-x: 32px;
+  --kh-radius: 20px;
+  --kh-radius-pill: 100px;
+
+  /* Komponenten */
+  --kh-input-font: 17px;
+  --kh-input-pad-y: 14px;
+  --kh-input-pad-x: 16px;
+  --kh-btn-font: 17px;
+  --kh-btn-pad-y: 16px;
+  --kh-btn-pad-x: 20px;
+
+  /* ── Karohilft CI Farben ── */
+  --kh-bg:           #F5E9DF;   /* warmes Beige (Hintergrund) */
+  --kh-card:         #FFFFFF;
+  --kh-primary:      #A0604A;   /* Terracotta (Primär-Button) */
+  --kh-primary-hover:#8A5040;
+  --kh-teal:         #5BA8A0;   /* Teal (Logo-Akzent, Links) */
+  --kh-teal-hover:   #4A9088;
+  --kh-salmon:       #C87558;   /* Salmon (kursive Akzent-Texte) */
+  --kh-green:        #2EBB78;   /* Grün (WhatsApp / Erfolg) */
+  --kh-green-hover:  #25A366;
+  --kh-text:         #3D2010;   /* Dunkelbraun (Fließtext) */
+  --kh-heading:      #2C1A0E;   /* fast Schwarz (Überschriften) */
+  --kh-muted:        #9A7060;   /* gedämpft (Labels, Hilfstexte) */
+  --kh-border:       #E8D5C8;
+  --kh-blue-text:    #9A7060;
+}
+
+html, body{
+  margin:0; padding:0; width:100%; min-height:100%;
+  background:var(--kh-bg); color:var(--kh-text);
+  font-family:'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size:var(--kh-font-base); line-height:var(--kh-line);
+  -webkit-text-size-adjust:100%;
+  overflow-x:hidden;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+img,canvas,video{ max-width:100%; height:auto; display:block; }
+
+main,
+.form-container,
+.card,
+.kh-card{
+  background:var(--kh-card);
+  border-radius:var(--kh-radius);
+  box-shadow:0 8px 32px rgba(160,96,74,.10);
+  width: min(var(--kh-card-max), calc(100% - var(--kh-card-side)));
+  margin: 40px auto;
+  padding: var(--kh-card-pad-y) var(--kh-card-pad-x);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+h1,h2,h3{
+  color:var(--kh-heading);
+  font-family:'Playfair Display', Georgia, serif;
+  text-align:center;
+  margin:0 0 20px;
+}
+h1{ font-size: clamp(28px, 6vw, 36px); font-weight:700; }
+h2{ font-size: clamp(20px, 5vw, 26px); font-weight:700; }
+h3{ font-size: clamp(17px, 4.5vw, 21px); font-weight:700; }
+
+p{ text-align:center; color:var(--kh-text); margin:0 0 24px; }
+
+input,select,textarea{
+  width:100%;
+  font-size:var(--kh-input-font);
+  font-family:inherit;
+  padding:var(--kh-input-pad-y) var(--kh-input-pad-x);
+  border:1.5px solid var(--kh-border);
+  border-radius:var(--kh-radius);
+  background:#fff;
+  color:var(--kh-text);
+  margin:0 0 14px;
+  transition:border-color .2s;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;
+  border-color:var(--kh-teal);
+}
+textarea{ min-height:120px; }
+
+/* Standard-Buttons */
+button,
+.btn,
+.button,
+a.button{
+  display:block;
+  width:100%;
+  background:var(--kh-primary);
+  color:#fff;
+  border:0;
+  border-radius:var(--kh-radius-pill);
+  font-weight:700;
+  font-size:var(--kh-btn-font);
+  font-family:inherit;
+  padding:var(--kh-btn-pad-y) var(--kh-btn-pad-x);
+  cursor:pointer;
+  transition:background-color .2s, transform .1s;
+  text-align:center;
+  text-decoration:none;
+}
+button:hover,.btn:hover,.button:hover,a.button:hover{
+  background:var(--kh-primary-hover);
+  transform:translateY(-1px);
+}
+button:active,.btn:active{ transform:translateY(0); }
+
+/* Teal-Variante */
+.btn-teal{
+  background:var(--kh-teal);
+}
+.btn-teal:hover{ background:var(--kh-teal-hover); }
+
+/* Grün-Variante */
+.btn-green{
+  background:var(--kh-green);
+}
+.btn-green:hover{ background:var(--kh-green-hover); }
+
+.btn-outline{
+  background:transparent;
+  color:var(--kh-primary);
+  border:2px solid var(--kh-primary);
+  border-radius:var(--kh-radius-pill);
+}
+.btn-outline:hover{
+  background:var(--kh-primary);
+  color:#fff;
+}
+
+footer{
+  text-align:center;
+  font-size:.9rem;
+  color:var(--kh-muted);
+  margin-top:34px;
+}
+
+/* iOS Safe Area */
+body{
+  padding-left:env(safe-area-inset-left,0);
+  padding-right:env(safe-area-inset-right,0);
+}
+@supports (padding:max(0px)){
+  body{
+    padding-left:max(0px, env(safe-area-inset-left,0));
+    padding-right:max(0px, env(safe-area-inset-right,0));
+  }
+}
+
+main *, .form-container *, .card *, .kh-card *{ max-width:100%; }
+
+@media (min-width:1200px){
+  :root{ --kh-card-max:760px; }
+}
+
+/* Logo mittig */
+img[src*="karohilft-logo"],
+img[alt*="KaroHilft"],
+img[alt*="karohilft"]{
+  display:block !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  margin-bottom:20px;
+  width:180px;
+  height:auto;
+  object-fit:contain;
+}
+
+/* Akzent-Text (kursiv, Salmon) */
+.kh-accent{
+  color:var(--kh-salmon);
+  font-style:italic;
+  font-family:'Playfair Display', Georgia, serif;
+}
+
+/* Löschen-Button ausblenden */
+.kh-card button:not([type="submit"]):has(+ p),
+.kh-card button:not([type="submit"]):has(+ small),
+.kh-card a.button:has(+ p),
+.kh-card a.button:has(+ small),
+.kh-card button[aria-label*="löschen" i],
+.signature-container button[type="button"] {
+  display: none !important;
+}
