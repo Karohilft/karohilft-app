@@ -5,16 +5,15 @@ export default class MyDocument extends Document {
     return (
       <Html lang="de">
         <Head>
-          {/* Google Fonts – Playfair Display für Überschriften */}
+          {/* Google Fonts – exakt wie karohilft.at */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+          <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 
-          {/* PWA Meta – unverändert */}
+          {/* PWA Meta */}
           <link rel="manifest" href="/manifest.webmanifest" />
-          <meta name="theme-color" content="#F5E9DF" />
+          <meta name="theme-color" content="#FAF5EE" />
           <link rel="icon" href="/icons/icon-192.png" />
-          {/* iOS Vollbild + Icon */}
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <link rel="apple-touch-icon" href="/icons/icon-192.png" />
