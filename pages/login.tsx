@@ -69,6 +69,10 @@ export default function LoginPage() {
           <p style={{ marginTop: 16, fontSize: 14, color: 'var(--mid)', textAlign: 'center' }}>
             <a href="/forgot-password" style={{ color: 'var(--rose)' }}>Passwort vergessen?</a>
           </p>
+          <p style={{ marginTop: 10, fontSize: 14, color: 'var(--mid)', textAlign: 'center' }}>
+            Neu hier?{' '}
+            <a href="/register" style={{ color: 'var(--rose)', fontWeight: 500 }}>Als Betreuer registrieren</a>
+          </p>
         </div>
       </div>
     </div>
