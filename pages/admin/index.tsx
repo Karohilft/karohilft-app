@@ -9,9 +9,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
-      const token = data.session.access_token
-      const res = await fetch('/api/admin/me', { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) { router.replace('/'); return }
+      const email = data.session.user.email
+      const { data: cg } = await getSupabase().from('caregivers').select('role').eq('email', email).single()
+      if (cg?.role !== 'admin') { router.replace('/betreuer'); return }
       setLoading(false)
     })
   }, [router])
