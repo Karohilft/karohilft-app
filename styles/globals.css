@@ -160,7 +160,11 @@ input:focus, select:focus, textarea:focus {
 textarea { min-height: 120px; resize: vertical; }
 
 /* ── BUTTONS ── */
-button,
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
 .btn,
 .button,
 a.button {
