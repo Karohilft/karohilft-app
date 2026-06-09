@@ -10,10 +10,11 @@ export default function AdminDashboard() {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       const email = data.session.user.email
+      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
       const metaRole = data.session.user.user_metadata?.role
       const { data: cg } = await getSupabase().from('caregivers').select('role').eq('email', email).single()
-      const role = cg?.role ?? metaRole
-      if (role !== 'admin') { router.replace('/betreuer'); return }
+      const isAdmin = cg?.role === 'admin' || metaRole === 'admin' || adminEmails.includes(email?.toLowerCase() ?? '')
+      if (!isAdmin) { router.replace('/betreuer'); return }
       setLoading(false)
     })
   }, [router])

@@ -8,15 +8,11 @@ export default function Home() {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       const email = data.session.user.email
-      // Rolle aus user_metadata (gesetzt beim Login/Register) als Fallback
+      const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
       const metaRole = data.session.user.user_metadata?.role
-      const { data: cg, error } = await getSupabase().from('caregivers').select('role').eq('email', email).single()
-      const role = cg?.role ?? metaRole
-      if (role === 'admin') {
-        router.replace('/admin')
-      } else {
-        router.replace('/betreuer')
-      }
+      const { data: cg } = await getSupabase().from('caregivers').select('role').eq('email', email).single()
+      const isAdmin = cg?.role === 'admin' || metaRole === 'admin' || adminEmails.includes(email?.toLowerCase() ?? '')
+      router.replace(isAdmin ? '/admin' : '/betreuer')
     })
   }, [router])
   return null
