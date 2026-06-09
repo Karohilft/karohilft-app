@@ -85,7 +85,7 @@ export default function AdminUsers() {
                 {c.email && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{c.email}</div>}
                 {c.phone && <div style={{ fontSize: 14, color: 'var(--mid)' }}>{c.phone}</div>}
               </div>
-              <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>×</button>
+              <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 13, padding: '0 2px', lineHeight: 1 }}>×</button>
             </div>
           ))}
       </div>
