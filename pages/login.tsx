@@ -26,25 +26,18 @@ export default function LoginPage() {
     e.preventDefault()
     setBusy(true)
     setErr(null)
-
     try {
       const authPromise = getSupabase().auth.signInWithPassword({ email, password })
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout nach 10s – Supabase nicht erreichbar')), 10000)
+        setTimeout(() => reject(new Error('Verbindung fehlgeschlagen. Bitte erneut versuchen.')), 10000)
       )
       const result = await Promise.race([authPromise, timeout])
-
-      if (result.error) {
-        setBusy(false)
-        setErr(result.error.message)
-        return
-      }
+      if (result.error) { setBusy(false); setErr(result.error.message); return }
     } catch (e: any) {
       setBusy(false)
       setErr(e.message || 'Unbekannter Fehler')
       return
     }
-
     const nextRaw = (router.query.next as string) || '/admin'
     let target: string
     try { target = decodeURIComponent(nextRaw) } catch { target = nextRaw }
@@ -56,8 +49,6 @@ export default function LoginPage() {
     window.location.href = target
     setBusy(false)
   }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'NICHT GESETZT'
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -77,9 +68,6 @@ export default function LoginPage() {
           </form>
           <p style={{ marginTop: 16, fontSize: 14, color: 'var(--mid)', textAlign: 'center' }}>
             <a href="/forgot-password" style={{ color: 'var(--rose)' }}>Passwort vergessen?</a>
-          </p>
-          <p style={{ marginTop: 8, fontSize: 10, color: '#aaa', textAlign: 'center', wordBreak: 'break-all' }}>
-            DB: {supabaseUrl}
           </p>
         </div>
       </div>
