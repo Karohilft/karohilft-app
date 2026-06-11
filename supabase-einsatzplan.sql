@@ -19,6 +19,10 @@ ALTER TABLE schedule ADD COLUMN IF NOT EXISTS series_id uuid;
 -- Abwesenheit eines Betreuers (z.B. Urlaub, Krankheit) – wird bei der Einsatzplanung ausgeblendet
 ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS absent boolean DEFAULT false;
 
+-- Sprachen & sonstige Notizen zum Betreuer
+ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS languages text;
+ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS notes text;
+
 alter table schedule enable row level security;
 
 drop policy if exists "Authenticated read schedule" on schedule;

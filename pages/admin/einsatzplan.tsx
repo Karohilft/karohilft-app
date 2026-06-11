@@ -16,7 +16,7 @@ type Entry = {
 
 type Rule = {
   id: string
-  caregiver_id: string
+  caregiver_id: string | null
   client_id: string
   weekdays: number[]
   zeit_von: string
@@ -76,6 +76,9 @@ export default function AdminEinsatzplan() {
   const [editingOpenId, setEditingOpenId] = useState<string | null>(null)
   const [openForm, setOpenForm] = useState({ client_id: '', caregiver_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
   const [savingOpen, setSavingOpen] = useState(false)
+  const [openRecurring, setOpenRecurring] = useState(false)
+  const [openRecurDays, setOpenRecurDays] = useState<number[]>([])
+  const [editingOpenRuleId, setEditingOpenRuleId] = useState<string | null>(null)
 
   async function load() {
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }] = await Promise.all([
@@ -99,7 +102,7 @@ export default function AdminEinsatzplan() {
   }, [router])
 
   const clientName = (id: string) => clients.find(c => c.id === id)?.name || '–'
-  const caregiverName = (id: string) => caregivers.find(c => c.id === id)?.name || '–'
+  const caregiverName = (id: string | null) => caregivers.find(c => c.id === id)?.name || '–'
 
   const myEntries = useMemo(() => {
     if (!selected) return []
@@ -122,23 +125,63 @@ export default function AdminEinsatzplan() {
   }, [myEntries])
 
   const openEntries = useMemo(() => entries.filter(e => !e.caregiver_id), [entries])
+  const openRules = useMemo(() => rules.filter(r => !r.caregiver_id), [rules])
 
   function openOpenNew() {
     setEditingOpenId(null)
+    setEditingOpenRuleId(null)
+    setOpenRecurring(false)
+    setOpenRecurDays([])
     setOpenForm({ client_id: '', caregiver_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
     setShowOpenForm(true)
   }
 
   function openOpenEdit(e: Entry) {
     setEditingOpenId(e.id)
+    setEditingOpenRuleId(null)
+    setOpenRecurring(false)
+    setOpenRecurDays([])
     setOpenForm({ client_id: e.client_id, caregiver_id: e.caregiver_id || '', datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
     setShowOpenForm(true)
   }
 
+  function openOpenEditRule(r: Rule) {
+    setEditingOpenId(null)
+    setEditingOpenRuleId(r.id)
+    setOpenRecurring(true)
+    setOpenRecurDays(r.weekdays)
+    setOpenForm({ client_id: r.client_id, caregiver_id: r.caregiver_id || '', datum: r.start_date, zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort || '' })
+    setShowOpenForm(true)
+  }
+
+  function toggleOpenRecurDay(idx: number) {
+    setOpenRecurDays(d => d.includes(idx) ? d.filter(x => x !== idx) : [...d, idx].sort())
+  }
+
   async function saveOpen() {
-    if (!openForm.client_id || !openForm.datum || !openForm.zeit_von || !openForm.zeit_bis) return
+    if (!openForm.client_id || !openForm.zeit_von || !openForm.zeit_bis) return
     if (openForm.zeit_von >= openForm.zeit_bis) { alert('Die Endzeit muss nach der Startzeit liegen.'); return }
 
+    if (openRecurring) {
+      if (openRecurDays.length === 0) { alert('Bitte mindestens einen Wochentag wählen.'); return }
+      const startDate = openForm.datum || todayStr()
+      if (openForm.caregiver_id) {
+        const conflict = ruleConflict(openForm.caregiver_id, openRecurDays, openForm.zeit_von, openForm.zeit_bis, startDate, editingOpenRuleId)
+        if (conflict) { alert('Überschneidung: ' + conflict); return }
+      }
+      setSavingOpen(true)
+      const payload = { caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, weekdays: openRecurDays, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null, start_date: startDate }
+      const { error } = editingOpenRuleId
+        ? await getSupabase().from('schedule_rules').update(payload).eq('id', editingOpenRuleId)
+        : await getSupabase().from('schedule_rules').insert(payload)
+      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
+      setShowOpenForm(false)
+      setSavingOpen(false)
+      await load()
+      return
+    }
+
+    if (!openForm.datum) return
     if (openForm.caregiver_id) {
       const conflict = checkConflict(openForm.caregiver_id, openForm.datum, openForm.zeit_von, openForm.zeit_bis, editingOpenId)
       if (conflict) { alert('Überschneidung: ' + conflict); return }
@@ -313,7 +356,7 @@ export default function AdminEinsatzplan() {
 
           {showOpenForm && (
             <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingOpenId ? 'Einsatz bearbeiten' : 'Neuer individueller Einsatz'}</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingOpenId ? 'Einsatz bearbeiten' : editingOpenRuleId ? 'Festen Termin bearbeiten' : 'Neuer individueller Einsatz'}</h2>
               <div style={{ display: 'grid', gap: 12 }}>
                 <select value={openForm.client_id} onChange={e => setOpenForm(f => ({ ...f, client_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
                   <option value="">– Klient –</option>
@@ -323,9 +366,11 @@ export default function AdminEinsatzplan() {
                   <option value="">– noch nicht zugeteilt –</option>
                   {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}{c.absent ? ' (abwesend)' : ''}</option>)}
                 </select>
-                <label style={{ fontSize: 13, color: 'var(--mid)' }}>Datum
-                  <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                </label>
+                {!openRecurring && (
+                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Datum
+                    <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                  </label>
+                )}
                 <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
                   <TimeSelect value={openForm.zeit_von} onChange={v => setOpenForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
                 </label>
@@ -334,12 +379,52 @@ export default function AdminEinsatzplan() {
                 </label>
                 <input placeholder="Ort (optional)" value={openForm.ort} onChange={e => setOpenForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
 
+                {!editingOpenId && (
+                  <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
+                    {!editingOpenRuleId && (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--dark)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={openRecurring} onChange={e => setOpenRecurring(e.target.checked)} />
+                        Fester Termin (z.B. Mo–Do, läuft bis er beendet wird)
+                      </label>
+                    )}
+                    {openRecurring && (
+                      <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {WEEKDAYS.map((wd, i) => (
+                            <button key={wd} type="button" onClick={() => toggleOpenRecurDay(i)} style={{ padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: openRecurDays.includes(i) ? 'var(--rose)' : '#fff', color: openRecurDays.includes(i) ? '#fff' : 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>{wd}</button>
+                          ))}
+                        </div>
+                        <label style={{ fontSize: 13, color: 'var(--mid)' }}>Beginnt am
+                          <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                        </label>
+                        <p style={{ fontSize: 13, color: 'var(--mid)', margin: 0 }}>Läuft automatisch weiter, bis der Termin beendet wird.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   {editingOpenId && <button onClick={() => del(editingOpenId).then(() => setShowOpenForm(false))} style={{ padding: '10px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(196,90,90,.3)', background: '#fff', color: '#c45a5a', cursor: 'pointer', fontSize: 13, marginRight: 'auto' }}>Löschen</button>}
+                  {editingOpenRuleId && <button onClick={() => delRule(editingOpenRuleId).then(() => setShowOpenForm(false))} style={{ padding: '10px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(196,90,90,.3)', background: '#fff', color: '#c45a5a', cursor: 'pointer', fontSize: 13, marginRight: 'auto' }}>Festen Termin beenden</button>}
                   <button onClick={() => setShowOpenForm(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
-                  <button onClick={saveOpen} disabled={savingOpen || !openForm.client_id || !openForm.datum || !openForm.zeit_von || !openForm.zeit_bis} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: savingOpen ? 0.6 : 1 }}>{savingOpen ? 'Speichern…' : 'Speichern'}</button>
+                  <button onClick={saveOpen} disabled={savingOpen || !openForm.client_id || !openForm.zeit_von || !openForm.zeit_bis || (openRecurring ? openRecurDays.length === 0 : !openForm.datum)} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: savingOpen ? 0.6 : 1 }}>{savingOpen ? 'Speichern…' : 'Speichern'}</button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {openRules.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Offene feste Termine</h2>
+              {openRules.map(r => (
+                <div key={r.id} onClick={() => openOpenEditRule(r)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: '4px solid var(--rose)' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{weekdaysLabel(r.weekdays)} · {r.zeit_von}–{r.zeit_bis}</div>
+                    <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(r.client_id)}{r.ort ? ` · ${r.ort}` : ''}</div>
+                  </div>
+                  <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>zu vergeben</span>
+                </div>
+              ))}
             </div>
           )}
 

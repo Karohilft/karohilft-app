@@ -4,7 +4,7 @@ import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 
-type Caregiver = { id: string; name: string; email: string; phone: string; role: string; birthdate: string | null; card_number: number | null; absent: boolean }
+type Caregiver = { id: string; name: string; email: string; phone: string; role: string; birthdate: string | null; card_number: number | null; absent: boolean; languages: string | null; notes: string | null }
 
 export default function AdminUsers() {
   const router = useRouter()
@@ -12,12 +12,12 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', birthdate: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' })
   const [printCard, setPrintCard] = useState<Caregiver | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
 
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,birthdate,card_number,absent').order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,birthdate,card_number,absent,languages,notes').order('name')
     setCaregivers((data as Caregiver[]) || [])
     setLoading(false)
   }
@@ -32,13 +32,13 @@ export default function AdminUsers() {
   async function save() {
     if (!form.name) return
     setSaving(true)
-    const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, birthdate: form.birthdate || null }
+    const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, birthdate: form.birthdate || null, languages: form.languages || null, notes: form.notes || null }
     if (editingId) {
       await getSupabase().from('caregivers').update(payload).eq('id', editingId)
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }
-    setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '' })
+    setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' })
     setEditingId(null)
     setShowForm(false)
     setSaving(false)
@@ -46,7 +46,7 @@ export default function AdminUsers() {
   }
 
   function edit(c: Caregiver) {
-    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, birthdate: c.birthdate || '' })
+    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, birthdate: c.birthdate || '', languages: c.languages || '', notes: c.notes || '' })
     setEditingId(c.id)
     setShowForm(true)
   }
@@ -105,7 +105,7 @@ export default function AdminUsers() {
             <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Betreuer</h1>
           </div>
-          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '' }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
+          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
         </div>
 
         {showForm && (
@@ -122,8 +122,10 @@ export default function AdminUsers() {
               <label style={{ fontSize: 13, color: 'var(--mid)' }}>Geburtsdatum
                 <input type="date" value={form.birthdate} onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%' }} />
               </label>
+              <input placeholder="Sprachen (z.B. Deutsch, Englisch)" value={form.languages} onChange={e => setForm(f => ({ ...f, languages: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+              <textarea placeholder="Sonstiges" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, fontFamily: 'inherit', resize: 'vertical' }} />
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
+                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
                 <button onClick={save} disabled={saving || !form.name} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving || !form.name ? 0.6 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
               </div>
             </div>
@@ -154,6 +156,8 @@ export default function AdminUsers() {
                   {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
                   {formatCardNumber(c.card_number)}
                 </div>
+                {c.languages && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>Sprachen: {c.languages}</div>}
+                {c.notes && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{c.notes}</div>}
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                 <button onClick={() => edit(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
