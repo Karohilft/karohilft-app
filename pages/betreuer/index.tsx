@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 
 export default function BetreuerHome() {
   const router = useRouter()
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [cardNumber, setCardNumber] = useState<number | null>(null)
   const [birthdate, setBirthdate] = useState<string | null>(null)
   const [showCard, setShowCard] = useState(false)
@@ -14,10 +17,10 @@ export default function BetreuerHome() {
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
-      const email = data.session.user.email
-      const { data: cg } = await getSupabase().from('caregivers').select('name,birthdate,card_number').eq('email', email).single()
+      const sessionEmail = data.session.user.email
+      const { data: cg } = await getSupabase().from('caregivers').select('name,phone,email,birthdate,card_number').eq('email', sessionEmail).single()
       if (cg?.name) setName(cg.name)
-      if (cg) { setBirthdate(cg.birthdate); setCardNumber(cg.card_number) }
+      if (cg) { setPhone(cg.phone || ''); setEmail(cg.email || ''); setBirthdate(cg.birthdate); setCardNumber(cg.card_number) }
       setLoading(false)
     })
   }, [router])
@@ -36,13 +39,16 @@ export default function BetreuerHome() {
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Meine Karte</h2>
             <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 28 }} />
+                <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
                 <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>Betreuerkarte</span>
               </div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{name}</div>
-                {birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(birthdate).toLocaleDateString('de-AT')}</div>}
-                {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(cardNumber)}</div>}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{name}</div>
+                  {birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(birthdate).toLocaleDateString('de-AT')}</div>}
+                  {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(cardNumber)}</div>}
+                </div>
+                <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${name}\nORG:Karohilft\nTEL:${phone}\nEMAIL:${email}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
