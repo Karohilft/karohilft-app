@@ -4,7 +4,7 @@ const MINUTES = ['00', '15', '30', '45']
 export default function TimeSelect({ value, onChange, style }: { value: string; onChange: (v: string) => void; style?: React.CSSProperties }) {
   const [h, m] = value ? value.split(':') : ['', '']
 
-  const selectStyle: React.CSSProperties = { padding: '11px 10px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff', ...style }
+  const selectStyle: React.CSSProperties = { padding: '6px 6px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff', ...style }
 
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

@@ -144,7 +144,8 @@ export default function AdminEinsatzplan() {
       setSaving(true)
       const seriesId = crypto.randomUUID()
       const rows = dates.map(datum => ({ caregiver_id: selected.id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null, series_id: seriesId }))
-      await getSupabase().from('schedule').insert(rows)
+      const { error } = await getSupabase().from('schedule').insert(rows)
+      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
       setShowForm(false)
       setSaving(false)
       await load()
@@ -156,11 +157,10 @@ export default function AdminEinsatzplan() {
 
     setSaving(true)
     const payload = { caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }
-    if (editingId) {
-      await getSupabase().from('schedule').update(payload).eq('id', editingId)
-    } else {
-      await getSupabase().from('schedule').insert(payload)
-    }
+    const { error } = editingId
+      ? await getSupabase().from('schedule').update(payload).eq('id', editingId)
+      : await getSupabase().from('schedule').insert(payload)
+    if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
     setShowForm(false)
     setSaving(false)
     await load()
