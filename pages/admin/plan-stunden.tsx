@@ -82,6 +82,25 @@ export default function AdminStundenplan() {
     await load()
   }
 
+  const [showNew, setShowNew] = useState(false)
+  const [newForm, setNewForm] = useState({ caregiver_id: '', client_id: '', datum: '', zeit_von: '', zeit_bis: '' })
+
+  async function createEntry() {
+    if (!newForm.caregiver_id || !newForm.client_id || !newForm.datum || !newForm.zeit_von || !newForm.zeit_bis) return
+    setSaving(true)
+    await getSupabase().from('activities').insert({
+      caregiver_id: newForm.caregiver_id,
+      client_id: newForm.client_id,
+      datum: newForm.datum,
+      zeit_von: newForm.zeit_von,
+      zeit_bis: newForm.zeit_bis,
+    })
+    setNewForm({ caregiver_id: '', client_id: '', datum: '', zeit_von: '', zeit_bis: '' })
+    setShowNew(false)
+    setSaving(false)
+    await load()
+  }
+
   const caregiverNames = [...new Set(entries.map(e => (e.caregiver as any)?.name).filter(Boolean))].sort()
   const clientNames = [...new Set(entries.map(e => (e.client as any)?.name).filter(Boolean))].sort()
   const months = [...new Set(entries.map(e => e.datum?.substring(0, 7)).filter(Boolean))].sort().reverse()
@@ -105,8 +124,36 @@ export default function AdminStundenplan() {
             <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Stundenplan</h1>
           </div>
-          <button onClick={() => window.print()} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 10 }}>Drucken</button>
+          <div className="no-print" style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 10 }}>
+            <button onClick={() => setShowNew(!showNew)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>{showNew ? 'Schließen' : '+ Neu'}</button>
+            <button onClick={() => window.print()} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>Drucken</button>
+          </div>
         </div>
+
+        {showNew && (
+          <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>Neuer Einsatz</h2>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <select value={newForm.caregiver_id} onChange={e => setNewForm(f => ({ ...f, caregiver_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
+                <option value="">– Betreuer –</option>
+                {caregiverOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+              <select value={newForm.client_id} onChange={e => setNewForm(f => ({ ...f, client_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
+                <option value="">– Klient –</option>
+                {clientOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <input type="date" value={newForm.datum} onChange={e => setNewForm(f => ({ ...f, datum: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+                <input type="time" value={newForm.zeit_von} onChange={e => setNewForm(f => ({ ...f, zeit_von: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+                <input type="time" value={newForm.zeit_bis} onChange={e => setNewForm(f => ({ ...f, zeit_bis: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button onClick={() => setShowNew(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
+                <button onClick={createEntry} disabled={saving || !newForm.caregiver_id || !newForm.client_id || !newForm.datum || !newForm.zeit_von || !newForm.zeit_bis} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
           <select value={filterCaregiver} onChange={e => setFilterCaregiver(e.target.value)} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
