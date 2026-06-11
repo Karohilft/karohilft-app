@@ -52,7 +52,8 @@ export default function AdminUsers() {
   }
 
   async function del(id: string) {
-    if (!confirm('Betreuer löschen?')) return
+    if (!confirm('Betreuer löschen? Zugehörige Einsätze im Stundenplan werden ebenfalls gelöscht.')) return
+    await getSupabase().from('activities').delete().eq('caregiver_id', id)
     const { error } = await getSupabase().from('caregivers').delete().eq('id', id)
     if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
     await load()

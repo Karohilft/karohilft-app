@@ -54,8 +54,10 @@ export default function AdminClients() {
   }
 
   async function del(id: string) {
-    if (!confirm('Klient löschen?')) return
-    await getSupabase().from('clients').delete().eq('id', id)
+    if (!confirm('Klient löschen? Zugehörige Einsätze im Stundenplan werden ebenfalls gelöscht.')) return
+    await getSupabase().from('activities').delete().eq('client_id', id)
+    const { error } = await getSupabase().from('clients').delete().eq('id', id)
+    if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
     await load()
   }
 
