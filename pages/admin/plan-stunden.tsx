@@ -8,6 +8,8 @@ type Activity = {
   zeit_von: string
   zeit_bis: string
   unterschrift: string
+  caregiver_id: string | null
+  client_id: string | null
   caregiver: { name: string } | null
   client: { name: string } | null
 }
@@ -26,17 +28,59 @@ export default function AdminStundenplan() {
   const [filterCaregiver, setFilterCaregiver] = useState('')
   const [filterClient, setFilterClient] = useState('')
   const [filterMonth, setFilterMonth] = useState('')
+  const [caregiverOptions, setCaregiverOptions] = useState<{ id: string; name: string }[]>([])
+  const [clientOptions, setClientOptions] = useState<{ id: string; name: string }[]>([])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ caregiver_id: '', client_id: '', datum: '', zeit_von: '', zeit_bis: '' })
+  const [saving, setSaving] = useState(false)
+
+  async function load() {
+    const { data: d } = await getSupabase()
+      .from('activities')
+      .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver_id,client_id,caregiver:caregivers(name),client:clients(name)')
+      .order('datum', { ascending: false })
+    setEntries((d as any) || [])
+    setLoading(false)
+  }
 
   useEffect(() => {
-    getSupabase().auth.getSession().then(({ data }) => {
+    getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
-      getSupabase()
-        .from('activities')
-        .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver:caregivers(name),client:clients(name)')
-        .order('datum', { ascending: false })
-        .then(({ data: d }) => { setEntries((d as any) || []); setLoading(false) })
+      const [{ data: cgs }, { data: cls }] = await Promise.all([
+        getSupabase().from('caregivers').select('id,name').order('name'),
+        getSupabase().from('clients').select('id,name').order('name'),
+      ])
+      setCaregiverOptions((cgs as any) || [])
+      setClientOptions((cls as any) || [])
+      await load()
     })
   }, [router])
+
+  function edit(e: Activity) {
+    setEditingId(e.id)
+    setEditForm({ caregiver_id: e.caregiver_id || '', client_id: e.client_id || '', datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis })
+  }
+
+  async function saveEdit() {
+    if (!editingId) return
+    setSaving(true)
+    await getSupabase().from('activities').update({
+      caregiver_id: editForm.caregiver_id || null,
+      client_id: editForm.client_id || null,
+      datum: editForm.datum,
+      zeit_von: editForm.zeit_von,
+      zeit_bis: editForm.zeit_bis,
+    }).eq('id', editingId)
+    setEditingId(null)
+    setSaving(false)
+    await load()
+  }
+
+  async function delEntry(id: string) {
+    if (!confirm('Eintrag löschen?')) return
+    await getSupabase().from('activities').delete().eq('id', id)
+    await load()
+  }
 
   const caregiverNames = [...new Set(entries.map(e => (e.caregiver as any)?.name).filter(Boolean))].sort()
   const clientNames = [...new Set(entries.map(e => (e.client as any)?.name).filter(Boolean))].sort()
@@ -85,6 +129,31 @@ export default function AdminStundenplan() {
             <div>
               {filtered.map(e => {
                 const h = calcHours(e.zeit_von, e.zeit_bis)
+                if (editingId === e.id) {
+                  return (
+                    <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        <select value={editForm.caregiver_id} onChange={ev => setEditForm(f => ({ ...f, caregiver_id: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
+                          <option value="">– Betreuer –</option>
+                          {caregiverOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                        </select>
+                        <select value={editForm.client_id} onChange={ev => setEditForm(f => ({ ...f, client_id: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
+                          <option value="">– Klient –</option>
+                          {clientOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                        </select>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                          <input type="date" value={editForm.datum} onChange={ev => setEditForm(f => ({ ...f, datum: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
+                          <input type="time" value={editForm.zeit_von} onChange={ev => setEditForm(f => ({ ...f, zeit_von: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
+                          <input type="time" value={editForm.zeit_bis} onChange={ev => setEditForm(f => ({ ...f, zeit_bis: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                          <button onClick={() => setEditingId(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
+                          <button onClick={saveEdit} disabled={saving} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
                 return (
                   <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -99,6 +168,10 @@ export default function AdminStundenplan() {
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--rose)' }}>{h}h</div>
                         {e.unterschrift && <img src={e.unterschrift} alt="Unterschrift" style={{ height: 28, marginTop: 4, opacity: 0.6 }} />}
+                        <div className="no-print" style={{ display: 'flex', gap: 6, marginTop: 6, justifyContent: 'flex-end' }}>
+                          <button onClick={() => edit(e)} style={{ padding: '4px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 12, cursor: 'pointer' }}>Bearbeiten</button>
+                          <button onClick={() => delEntry(e.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                        </div>
                       </div>
                     </div>
                   </div>
