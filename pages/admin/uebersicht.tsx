@@ -23,8 +23,25 @@ type ActivityEntry = {
   client: { name: string } | null
 }
 
+type RuleEntry = {
+  id: string
+  caregiver_id: string
+  client_id: string
+  weekdays: number[]
+  zeit_von: string
+  zeit_bis: string
+  ort: string | null
+  start_date: string
+  caregiver: { name: string } | null
+  client: { name: string } | null
+}
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
+}
+
+function weekdayOf(dateStr: string) {
+  return (new Date(dateStr + 'T00:00:00').getDay() + 6) % 7
 }
 
 function nowTime() {
@@ -37,17 +54,20 @@ export default function AdminUebersicht() {
   const [loading, setLoading] = useState(true)
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([])
   const [activities, setActivities] = useState<ActivityEntry[]>([])
+  const [rules, setRules] = useState<RuleEntry[]>([])
 
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       const today = todayStr()
-      const [{ data: sched }, { data: acts }] = await Promise.all([
+      const [{ data: sched }, { data: acts }, { data: rls }] = await Promise.all([
         getSupabase().from('schedule').select('id,caregiver_id,client_id,zeit_von,zeit_bis,ort,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
         getSupabase().from('activities').select('id,caregiver_id,client_id,zeit_von,zeit_bis,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
+        getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date,caregiver:caregivers(name),client:clients(name)'),
       ])
       setSchedule((sched as any) || [])
       setActivities((acts as any) || [])
+      setRules((rls as any) || [])
       setLoading(false)
     })
   }, [router])
@@ -60,10 +80,17 @@ export default function AdminUebersicht() {
     return activities.some(a => a.caregiver_id === e.caregiver_id && a.client_id === e.client_id && a.zeit_von === e.zeit_von)
   }
 
-  const laufend = schedule.filter(e => !isDone(e) && e.zeit_von <= now && now < e.zeit_bis)
-  const offen = schedule.filter(e => !isDone(e) && now < e.zeit_von)
-  const abgeschlossen = schedule.filter(e => isDone(e))
-  const extraAbgeschlossen = activities.filter(a => !schedule.some(e => e.caregiver_id === a.caregiver_id && e.client_id === a.client_id && e.zeit_von === a.zeit_von))
+  const today = todayStr()
+  const todaysWeekday = weekdayOf(today)
+  const ruleEntries: ScheduleEntry[] = rules
+    .filter(r => r.start_date <= today && r.weekdays.includes(todaysWeekday))
+    .map(r => ({ id: 'rule-' + r.id, caregiver_id: r.caregiver_id, client_id: r.client_id, zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort, caregiver: r.caregiver, client: r.client }))
+  const allEntries = [...schedule, ...ruleEntries].sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
+
+  const laufend = allEntries.filter(e => !isDone(e) && e.zeit_von <= now && now < e.zeit_bis)
+  const offen = allEntries.filter(e => !isDone(e) && now < e.zeit_von)
+  const abgeschlossen = allEntries.filter(e => isDone(e))
+  const extraAbgeschlossen = activities.filter(a => !allEntries.some(e => e.caregiver_id === a.caregiver_id && e.client_id === a.client_id && e.zeit_von === a.zeit_von))
 
   function Section({ title, color, items }: { title: string; color: string; items: { id: string; caregiver: string; client: string; zeit_von: string; zeit_bis: string; ort?: string | null }[] }) {
     return (
