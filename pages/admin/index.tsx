@@ -35,6 +35,10 @@ export default function AdminDashboard() {
 
         <div style={{ display: 'grid', gap: 12 }}>
           {[{
+            href: '/admin/einsatzplan',
+            title: 'Einsatzplanung',
+            desc: 'Betreuer Klienten zuteilen, Überschneidungen vermeiden'
+          }, {
             href: '/admin/plan-stunden',
             title: 'Stundenplan',
             desc: 'Stundeneinsätze verwalten & abrechnen'
