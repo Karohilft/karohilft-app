@@ -53,7 +53,8 @@ export default function AdminUsers() {
 
   async function del(id: string) {
     if (!confirm('Betreuer löschen?')) return
-    await getSupabase().from('caregivers').delete().eq('id', id)
+    const { error } = await getSupabase().from('caregivers').delete().eq('id', id)
+    if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
     await load()
   }
 
