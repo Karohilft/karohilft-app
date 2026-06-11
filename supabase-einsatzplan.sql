@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS schedule (
   created_at timestamptz default now()
 );
 
+-- Falls die Tabelle schon vorher (ohne series_id) existierte:
+ALTER TABLE schedule ADD COLUMN IF NOT EXISTS series_id uuid;
+
 -- Abwesenheit eines Betreuers (z.B. Urlaub, Krankheit) – wird bei der Einsatzplanung ausgeblendet
 ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS absent boolean DEFAULT false;
 
