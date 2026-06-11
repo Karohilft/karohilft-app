@@ -43,7 +43,7 @@ export default function BetreuerHome() {
                 <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>Betreuerkarte</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
+                <div style={{ marginBottom: 8 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{name}</div>
                   {birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(birthdate).toLocaleDateString('de-AT')}</div>}
                   {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(cardNumber)}</div>}
