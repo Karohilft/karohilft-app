@@ -18,8 +18,10 @@ ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS absent boolean DEFAULT false;
 
 alter table schedule enable row level security;
 
+drop policy if exists "Authenticated read schedule" on schedule;
 create policy "Authenticated read schedule" on schedule
   for select using (auth.role() = 'authenticated');
 
+drop policy if exists "Authenticated write schedule" on schedule;
 create policy "Authenticated write schedule" on schedule
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
