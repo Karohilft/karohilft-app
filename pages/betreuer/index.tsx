@@ -84,6 +84,13 @@ export default function BetreuerHome() {
         </button>
 
         <button
+          onClick={() => router.push('/betreuer/plan')}
+          style={{ marginTop: 10, width: '100%', padding: '13px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontWeight: 500, fontSize: 16, cursor: 'pointer' }}
+        >
+          Mein Plan
+        </button>
+
+        <button
           onClick={async () => { await getSupabase().auth.signOut(); router.replace('/login') }}
           style={{ marginTop: 20, width: '100%', padding: '13px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: 'transparent', color: 'var(--mid)', fontSize: 15, cursor: 'pointer' }}
         >
