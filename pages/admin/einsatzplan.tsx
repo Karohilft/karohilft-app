@@ -16,14 +16,7 @@ type Entry = {
 
 type Person = { id: string; name: string; absent?: boolean }
 
-const COLORS = ['#C47C5A', '#7C9A82', '#8C7CA8', '#5A8CA8', '#C4A05A', '#A85A7C', '#5AA890', '#A87C5A']
-
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-
-function colorFor(id: string, ids: string[]) {
-  const idx = ids.indexOf(id)
-  return COLORS[idx % COLORS.length]
-}
 
 function overlaps(aVon: string, aBis: string, bVon: string, bBis: string) {
   return aVon < bBis && bVon < aBis
@@ -31,13 +24,6 @@ function overlaps(aVon: string, aBis: string, bVon: string, bBis: string) {
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
-}
-
-function startOfWeek(dateStr: string) {
-  const d = new Date(dateStr + 'T00:00:00')
-  const day = (d.getDay() + 6) % 7 // 0 = Monday
-  d.setDate(d.getDate() - day)
-  return d
 }
 
 function addDays(d: Date, n: number) {
@@ -50,8 +36,8 @@ function fmtISO(d: Date) {
   return d.toISOString().slice(0, 10)
 }
 
-function fmtLabel(d: Date) {
-  return d.toLocaleDateString('de-AT', { weekday: 'long', day: '2-digit', month: '2-digit' })
+function fmtDate(dateStr: string) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit' })
 }
 
 export default function AdminEinsatzplan() {
@@ -60,25 +46,21 @@ export default function AdminEinsatzplan() {
   const [caregivers, setCaregivers] = useState<Person[]>([])
   const [clients, setClients] = useState<Person[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(todayStr()))
+  const [selected, setSelected] = useState<Person | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ caregiver_id: '', client_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+  const [form, setForm] = useState({ client_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
   const [recurring, setRecurring] = useState(false)
   const [recurUntil, setRecurUntil] = useState('')
   const [recurDays, setRecurDays] = useState<number[]>([])
-
-  const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
-  const weekFrom = fmtISO(weekDates[0])
-  const weekTo = fmtISO(weekDates[6])
 
   async function load() {
     const [{ data: cgs }, { data: cls }, { data: sched }] = await Promise.all([
       getSupabase().from('caregivers').select('id,name,absent').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
-      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id').gte('datum', weekFrom).lte('datum', weekTo).order('zeit_von'),
+      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id').gte('datum', todayStr()).order('datum').order('zeit_von'),
     ])
     setCaregivers((cgs as any) || [])
     setClients((cls as any) || [])
@@ -93,26 +75,21 @@ export default function AdminEinsatzplan() {
     })
   }, [router])
 
-  useEffect(() => {
-    if (!loading) load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekFrom, weekTo])
-
-  const caregiverIds = useMemo(() => caregivers.map(c => c.id), [caregivers])
   const clientName = (id: string) => clients.find(c => c.id === id)?.name || '–'
   const caregiverName = (id: string) => caregivers.find(c => c.id === id)?.name || '–'
 
-  function entriesForDay(dateStr: string) {
-    return entries.filter(e => e.datum === dateStr).sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
-  }
+  const myEntries = useMemo(() => {
+    if (!selected) return []
+    return entries.filter(e => e.caregiver_id === selected.id)
+  }, [entries, selected])
 
-  function openNew(dateStr?: string) {
+  function openNew() {
     setEditingId(null)
     setEditingSeriesId(null)
     setRecurring(false)
     setRecurUntil('')
     setRecurDays([])
-    setForm({ caregiver_id: '', client_id: '', datum: dateStr || todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+    setForm({ client_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
     setShowForm(true)
   }
 
@@ -122,7 +99,7 @@ export default function AdminEinsatzplan() {
     setRecurring(false)
     setRecurUntil('')
     setRecurDays([])
-    setForm({ caregiver_id: e.caregiver_id, client_id: e.client_id, datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
+    setForm({ client_id: e.client_id, datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
     setShowForm(true)
   }
 
@@ -140,7 +117,8 @@ export default function AdminEinsatzplan() {
   }
 
   async function save() {
-    if (!form.caregiver_id || !form.client_id || !form.datum || !form.zeit_von || !form.zeit_bis) return
+    if (!selected) return
+    if (!form.client_id || !form.datum || !form.zeit_von || !form.zeit_bis) return
     if (form.zeit_von >= form.zeit_bis) { alert('Die Endzeit muss nach der Startzeit liegen.'); return }
 
     if (recurring) {
@@ -158,14 +136,14 @@ export default function AdminEinsatzplan() {
 
       const seen: { datum: string; von: string; bis: string }[] = []
       for (const datum of dates) {
-        const conflict = checkConflict(form.caregiver_id, datum, form.zeit_von, form.zeit_bis, null, seen)
+        const conflict = checkConflict(selected.id, datum, form.zeit_von, form.zeit_bis, null, seen)
         if (conflict) { alert('Überschneidung: ' + conflict); return }
         seen.push({ datum, von: form.zeit_von, bis: form.zeit_bis })
       }
 
       setSaving(true)
       const seriesId = crypto.randomUUID()
-      const rows = dates.map(datum => ({ caregiver_id: form.caregiver_id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null, series_id: seriesId }))
+      const rows = dates.map(datum => ({ caregiver_id: selected.id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null, series_id: seriesId }))
       await getSupabase().from('schedule').insert(rows)
       setShowForm(false)
       setSaving(false)
@@ -173,11 +151,11 @@ export default function AdminEinsatzplan() {
       return
     }
 
-    const conflict = checkConflict(form.caregiver_id, form.datum, form.zeit_von, form.zeit_bis, editingId)
+    const conflict = checkConflict(selected.id, form.datum, form.zeit_von, form.zeit_bis, editingId)
     if (conflict) { alert('Überschneidung: ' + conflict); return }
 
     setSaving(true)
-    const payload = { caregiver_id: form.caregiver_id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }
+    const payload = { caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }
     if (editingId) {
       await getSupabase().from('schedule').update(payload).eq('id', editingId)
     } else {
@@ -207,31 +185,52 @@ export default function AdminEinsatzplan() {
 
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflow: 'hidden' }}>
+  // Caregiver list
+  if (!selected) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
             <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Einsatzplanung</h1>
           </div>
-          <button onClick={() => openNew()} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>+ Neu</button>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <button onClick={() => setWeekStart(s => addDays(s, -7))} style={{ padding: '8px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', cursor: 'pointer' }}>← Woche</button>
-          <span style={{ fontSize: 14, color: 'var(--mid)', fontWeight: 500 }}>{fmtISO(weekDates[0])} – {fmtISO(weekDates[6])}</span>
-          <button onClick={() => setWeekStart(s => addDays(s, 7))} style={{ padding: '8px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', cursor: 'pointer' }}>Woche →</button>
+          {caregivers.length === 0
+            ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer angelegt.</div>
+            : caregivers.map(c => {
+              const count = entries.filter(e => e.caregiver_id === c.id).length
+              return (
+                <div key={c.id} onClick={() => setSelected(c)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {c.absent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff' }}>abwesend</span>}
+                    <span style={{ fontSize: 13, color: 'var(--mid)' }}>{count} Termin{count === 1 ? '' : 'e'}</span>
+                    <span style={{ color: 'var(--rose)', fontSize: 18 }}>›</span>
+                  </div>
+                </div>
+              )
+            })}
+        </div>
+      </div>
+    )
+  }
+
+  // Caregiver detail
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflow: 'hidden' }}>
+            <button onClick={() => { setSelected(null); setShowForm(false) }} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.name}</h1>
+          </div>
+          <button onClick={openNew} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>+ Neu</button>
         </div>
 
         {showForm && (
           <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingId ? 'Termin bearbeiten' : 'Neuer Termin'}</h2>
             <div style={{ display: 'grid', gap: 12 }}>
-              <select value={form.caregiver_id} onChange={e => setForm(f => ({ ...f, caregiver_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
-                <option value="">– Betreuer –</option>
-                {caregivers.map(c => <option key={c.id} value={c.id} disabled={c.absent}>{c.name}{c.absent ? ' (abwesend)' : ''}</option>)}
-              </select>
               <select value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
                 <option value="">– Klient –</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -239,10 +238,12 @@ export default function AdminEinsatzplan() {
               <label style={{ fontSize: 13, color: 'var(--mid)' }}>Datum
                 <input type="date" value={form.datum} onChange={e => setForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} />
-                <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} />
-              </div>
+              <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
+                <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
+              </label>
+              <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis
+                <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
+              </label>
               <input placeholder="Ort (optional)" value={form.ort} onChange={e => setForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
 
               {!editingId && (
@@ -272,51 +273,24 @@ export default function AdminEinsatzplan() {
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
-                  <button onClick={save} disabled={saving || !form.caregiver_id || !form.client_id || !form.datum || !form.zeit_von || !form.zeit_bis} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
+                  <button onClick={save} disabled={saving || !form.client_id || !form.datum || !form.zeit_von || !form.zeit_bis} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {caregivers.length === 0
-          ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer angelegt.</div>
-          : weekDates.map(d => {
-            const dateStr = fmtISO(d)
-            const dayEntries = entriesForDay(dateStr)
-            const busyIds = [...new Set(dayEntries.map(e => e.caregiver_id))]
-            const freeNames = caregivers.filter(c => !c.absent && !busyIds.includes(c.id)).map(c => c.name)
-            const absentNames = caregivers.filter(c => c.absent).map(c => c.name)
-            return (
-              <div key={dateStr} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: dayEntries.length ? 10 : 4 }}>
-                  <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15, textTransform: 'capitalize' }}>{fmtLabel(d)}</span>
-                  <button onClick={() => openNew(dateStr)} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', cursor: 'pointer', fontSize: 13, padding: 0 }}>+ Termin</button>
-                </div>
-                {dayEntries.map(e => (
-                  <div key={e.id} onClick={() => openEdit(e)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 'var(--r-sm)', background: colorFor(e.caregiver_id, caregiverIds) + '22', borderLeft: `4px solid ${colorFor(e.caregiver_id, caregiverIds)}`, marginBottom: 6, cursor: 'pointer' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14 }}>{e.zeit_von}–{e.zeit_bis} · {caregiverName(e.caregiver_id)} → {clientName(e.client_id)}</div>
-                      {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)' }}>{e.ort}</div>}
-                    </div>
-                    <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
-                  </div>
-                ))}
-                {freeNames.length > 0 && (
-                  <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: dayEntries.length ? 6 : 0 }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 'var(--r-pill)', background: 'var(--sage)', color: '#fff', marginRight: 6 }}>frei</span>
-                    {freeNames.join(', ')}
-                  </div>
-                )}
-                {absentNames.length > 0 && (
-                  <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 4 }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', marginRight: 6 }}>abwesend</span>
-                    {absentNames.join(', ')}
-                  </div>
-                )}
+        {myEntries.length === 0
+          ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Keine kommenden Termine.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Einsatz zuzuteilen.</span></div>
+          : myEntries.map(e => (
+            <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+              <div>
+                <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {e.zeit_von}–{e.zeit_bis}</div>
+                <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
               </div>
-            )
-          })}
+              <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+            </div>
+          ))}
       </div>
     </div>
   )

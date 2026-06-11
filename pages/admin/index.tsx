@@ -35,6 +35,10 @@ export default function AdminDashboard() {
 
         <div style={{ display: 'grid', gap: 12 }}>
           {[{
+            href: '/admin/uebersicht',
+            title: 'Übersicht',
+            desc: 'Aktuelle, offene & abgeschlossene Einsätze heute'
+          }, {
             href: '/admin/einsatzplan',
             title: 'Einsatzplanung',
             desc: 'Betreuer Klienten zuteilen, Überschneidungen vermeiden'
