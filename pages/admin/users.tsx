@@ -4,7 +4,7 @@ import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 
-type Caregiver = { id: string; name: string; email: string; phone: string; role: string; birthdate: string | null; card_number: number | null }
+type Caregiver = { id: string; name: string; email: string; phone: string; role: string; birthdate: string | null; card_number: number | null; absent: boolean }
 
 export default function AdminUsers() {
   const router = useRouter()
@@ -17,7 +17,7 @@ export default function AdminUsers() {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,birthdate,card_number').order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,birthdate,card_number,absent').order('name')
     setCaregivers((data as Caregiver[]) || [])
     setLoading(false)
   }
@@ -62,6 +62,11 @@ export default function AdminUsers() {
   async function toggleRole(id: string, currentRole: string) {
     const newRole = currentRole === 'admin' ? 'user' : 'admin'
     await getSupabase().from('caregivers').update({ role: newRole }).eq('id', id)
+    await load()
+  }
+
+  async function toggleAbsent(id: string, currentAbsent: boolean) {
+    await getSupabase().from('caregivers').update({ absent: !currentAbsent }).eq('id', id)
     await load()
   }
 
@@ -137,6 +142,11 @@ export default function AdminUsers() {
                     title="Rolle ändern"
                     style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.role === 'admin' ? 'var(--rose)' : 'var(--sage)', color: '#fff', border: 'none', cursor: 'pointer', lineHeight: 1.4 }}
                   >{c.role === 'admin' ? 'Admin' : 'Betreuer'}</button>
+                  <button
+                    onClick={() => toggleAbsent(c.id, c.absent)}
+                    title="Abwesenheit umschalten"
+                    style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.absent ? 'var(--rose)' : 'transparent', color: c.absent ? '#fff' : 'var(--mid)', border: c.absent ? 'none' : '1.5px solid rgba(28,24,20,.12)', cursor: 'pointer', lineHeight: 1.4 }}
+                  >{c.absent ? 'Abwesend' : 'Anwesend'}</button>
                 </div>
                 {c.email && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{c.email}</div>}
                 {c.phone && <div style={{ fontSize: 14, color: 'var(--mid)' }}>{c.phone}</div>}

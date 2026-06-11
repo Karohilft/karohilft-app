@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import TimeSelect from '../../components/TimeSelect'
 
 type Activity = {
   id: string
@@ -144,8 +145,8 @@ export default function AdminStundenplan() {
               </select>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                 <input type="date" value={newForm.datum} onChange={e => setNewForm(f => ({ ...f, datum: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
-                <input type="time" value={newForm.zeit_von} onChange={e => setNewForm(f => ({ ...f, zeit_von: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
-                <input type="time" value={newForm.zeit_bis} onChange={e => setNewForm(f => ({ ...f, zeit_bis: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+                <TimeSelect value={newForm.zeit_von} onChange={v => setNewForm(f => ({ ...f, zeit_von: v }))} />
+                <TimeSelect value={newForm.zeit_bis} onChange={v => setNewForm(f => ({ ...f, zeit_bis: v }))} />
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button onClick={() => setShowNew(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
@@ -190,8 +191,8 @@ export default function AdminStundenplan() {
                         </select>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                           <input type="date" value={editForm.datum} onChange={ev => setEditForm(f => ({ ...f, datum: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
-                          <input type="time" value={editForm.zeit_von} onChange={ev => setEditForm(f => ({ ...f, zeit_von: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
-                          <input type="time" value={editForm.zeit_bis} onChange={ev => setEditForm(f => ({ ...f, zeit_bis: ev.target.value }))} style={{ padding: '10px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
+                          <TimeSelect value={editForm.zeit_von} onChange={v => setEditForm(f => ({ ...f, zeit_von: v }))} style={{ fontSize: 14, padding: '10px 14px' }} />
+                          <TimeSelect value={editForm.zeit_bis} onChange={v => setEditForm(f => ({ ...f, zeit_bis: v }))} style={{ fontSize: 14, padding: '10px 14px' }} />
                         </div>
                         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                           <button onClick={() => setEditingId(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>

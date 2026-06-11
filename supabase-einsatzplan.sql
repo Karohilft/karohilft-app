@@ -9,8 +9,12 @@ CREATE TABLE IF NOT EXISTS schedule (
   zeit_von time not null,
   zeit_bis time not null,
   ort text,
+  series_id uuid,
   created_at timestamptz default now()
 );
+
+-- Abwesenheit eines Betreuers (z.B. Urlaub, Krankheit) – wird bei der Einsatzplanung ausgeblendet
+ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS absent boolean DEFAULT false;
 
 alter table schedule enable row level security;
 

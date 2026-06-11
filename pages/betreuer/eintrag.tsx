@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import TimeSelect from '../../components/TimeSelect'
 
 type Client = { id: string; name: string }
 
@@ -111,11 +112,11 @@ export default function BetreuerEintrag() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit von</label>
-                <input type="time" value={form.zeit_von} onChange={e => setForm(f => ({ ...f, zeit_von: e.target.value }))} style={{ width: '100%', padding: '13px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, boxSizing: 'border-box' }} />
+                <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit bis</label>
-                <input type="time" value={form.zeit_bis} onChange={e => setForm(f => ({ ...f, zeit_bis: e.target.value }))} style={{ width: '100%', padding: '13px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, boxSizing: 'border-box' }} />
+                <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
               </div>
             </div>
 
