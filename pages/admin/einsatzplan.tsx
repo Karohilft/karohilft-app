@@ -45,6 +45,12 @@ function fmtDate(dateStr: string) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit' })
 }
 
+function addDays(dateStr: string, n: number) {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
 function weekdaysLabel(weekdays: number[]) {
   return [...weekdays].sort().map(d => WEEKDAYS[d]).join(', ')
 }
@@ -66,6 +72,10 @@ export default function AdminEinsatzplan() {
   const [recurring, setRecurring] = useState(false)
   const [recurDays, setRecurDays] = useState<number[]>([])
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
+  const [showOpenForm, setShowOpenForm] = useState(false)
+  const [editingOpenId, setEditingOpenId] = useState<string | null>(null)
+  const [openForm, setOpenForm] = useState({ client_id: '', caregiver_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+  const [savingOpen, setSavingOpen] = useState(false)
 
   async function load() {
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }] = await Promise.all([
@@ -110,6 +120,40 @@ export default function AdminEinsatzplan() {
     }
     return groups
   }, [myEntries])
+
+  const openEntries = useMemo(() => entries.filter(e => !e.caregiver_id), [entries])
+
+  function openOpenNew() {
+    setEditingOpenId(null)
+    setOpenForm({ client_id: '', caregiver_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+    setShowOpenForm(true)
+  }
+
+  function openOpenEdit(e: Entry) {
+    setEditingOpenId(e.id)
+    setOpenForm({ client_id: e.client_id, caregiver_id: e.caregiver_id || '', datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
+    setShowOpenForm(true)
+  }
+
+  async function saveOpen() {
+    if (!openForm.client_id || !openForm.datum || !openForm.zeit_von || !openForm.zeit_bis) return
+    if (openForm.zeit_von >= openForm.zeit_bis) { alert('Die Endzeit muss nach der Startzeit liegen.'); return }
+
+    if (openForm.caregiver_id) {
+      const conflict = checkConflict(openForm.caregiver_id, openForm.datum, openForm.zeit_von, openForm.zeit_bis, editingOpenId)
+      if (conflict) { alert('Überschneidung: ' + conflict); return }
+    }
+
+    setSavingOpen(true)
+    const payload = { caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum: openForm.datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }
+    const { error } = editingOpenId
+      ? await getSupabase().from('schedule').update(payload).eq('id', editingOpenId)
+      : await getSupabase().from('schedule').insert(payload)
+    if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
+    setShowOpenForm(false)
+    setSavingOpen(false)
+    await load()
+  }
 
   function toggleDate(datum: string) {
     setExpandedDates(s => {
@@ -259,10 +303,63 @@ export default function AdminEinsatzplan() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
-            <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Einsatzplanung</h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflow: 'hidden' }}>
+              <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Einsatzplanung</h1>
+            </div>
+            <button onClick={openOpenNew} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>+ Offener Einsatz</button>
           </div>
+
+          {showOpenForm && (
+            <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingOpenId ? 'Einsatz bearbeiten' : 'Neuer individueller Einsatz'}</h2>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <select value={openForm.client_id} onChange={e => setOpenForm(f => ({ ...f, client_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
+                  <option value="">– Klient –</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <select value={openForm.caregiver_id} onChange={e => setOpenForm(f => ({ ...f, caregiver_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
+                  <option value="">– noch nicht zugeteilt –</option>
+                  {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}{c.absent ? ' (abwesend)' : ''}</option>)}
+                </select>
+                <label style={{ fontSize: 13, color: 'var(--mid)' }}>Datum
+                  <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                </label>
+                <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
+                  <TimeSelect value={openForm.zeit_von} onChange={v => setOpenForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
+                </label>
+                <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis
+                  <TimeSelect value={openForm.zeit_bis} onChange={v => setOpenForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
+                </label>
+                <input placeholder="Ort (optional)" value={openForm.ort} onChange={e => setOpenForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  {editingOpenId && <button onClick={() => del(editingOpenId).then(() => setShowOpenForm(false))} style={{ padding: '10px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(196,90,90,.3)', background: '#fff', color: '#c45a5a', cursor: 'pointer', fontSize: 13, marginRight: 'auto' }}>Löschen</button>}
+                  <button onClick={() => setShowOpenForm(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
+                  <button onClick={saveOpen} disabled={savingOpen || !openForm.client_id || !openForm.datum || !openForm.zeit_von || !openForm.zeit_bis} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: savingOpen ? 0.6 : 1 }}>{savingOpen ? 'Speichern…' : 'Speichern'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {openEntries.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Noch zu vergeben</h2>
+              {openEntries.map(e => {
+                const urgent = e.datum <= addDays(todayStr(), 3)
+                return (
+                  <div key={e.id} onClick={() => openOpenEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: urgent ? '4px solid var(--rose)' : undefined }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {e.zeit_von}–{e.zeit_bis}</div>
+                      <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
+                    </div>
+                    {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {caregivers.length === 0
             ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer angelegt.</div>
