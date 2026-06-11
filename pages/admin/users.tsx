@@ -15,6 +15,9 @@ export default function AdminUsers() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' })
   const [printCard, setPrintCard] = useState<Caregiver | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [filesOpenId, setFilesOpenId] = useState<string | null>(null)
+  const [files, setFiles] = useState<{ name: string }[]>([])
+  const [uploading, setUploading] = useState(false)
 
   async function load() {
     const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,birthdate,card_number,absent,languages,notes').order('name')
@@ -68,6 +71,39 @@ export default function AdminUsers() {
   async function toggleAbsent(id: string, currentAbsent: boolean) {
     await getSupabase().from('caregivers').update({ absent: !currentAbsent }).eq('id', id)
     await load()
+  }
+
+  async function loadFiles(id: string) {
+    const { data, error } = await getSupabase().storage.from('caregiver-files').list(id)
+    if (error) { alert('Dateien konnten nicht geladen werden: ' + error.message); return }
+    setFiles((data || []).filter(f => f.name !== '.emptyFolderPlaceholder').map(f => ({ name: f.name })))
+  }
+
+  function toggleFiles(id: string) {
+    if (filesOpenId === id) { setFilesOpenId(null); return }
+    setFilesOpenId(id)
+    loadFiles(id)
+  }
+
+  async function uploadFile(id: string, file: File) {
+    setUploading(true)
+    const { error } = await getSupabase().storage.from('caregiver-files').upload(`${id}/${file.name}`, file, { upsert: true })
+    if (error) { alert('Upload fehlgeschlagen: ' + error.message); setUploading(false); return }
+    setUploading(false)
+    await loadFiles(id)
+  }
+
+  async function deleteFile(id: string, name: string) {
+    if (!confirm(`"${name}" löschen?`)) return
+    const { error } = await getSupabase().storage.from('caregiver-files').remove([`${id}/${name}`])
+    if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
+    await loadFiles(id)
+  }
+
+  async function downloadFile(id: string, name: string) {
+    const { data, error } = await getSupabase().storage.from('caregiver-files').createSignedUrl(`${id}/${name}`, 60)
+    if (error || !data) { alert('Download fehlgeschlagen: ' + error?.message); return }
+    window.open(data.signedUrl, '_blank')
   }
 
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
@@ -135,7 +171,8 @@ export default function AdminUsers() {
         {caregivers.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Betreuer anzulegen.</span></div>
           : caregivers.map(c => (
-            <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</span>
@@ -161,9 +198,25 @@ export default function AdminUsers() {
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                 <button onClick={() => edit(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
+                <button onClick={() => toggleFiles(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: filesOpenId === c.id ? 'var(--cream)' : '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Dateien</button>
                 <button onClick={() => setPrintCard(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte</button>
                 <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
               </div>
+            </div>
+
+            {filesOpenId === c.id && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(28,24,20,.08)' }}>
+                {files.length === 0
+                  ? <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 10 }}>Keine Dateien.</div>
+                  : files.map(f => (
+                    <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', fontSize: 14 }}>
+                      <span onClick={() => downloadFile(c.id, f.name)} style={{ color: 'var(--dark)', cursor: 'pointer', textDecoration: 'underline', wordBreak: 'break-all' }}>{f.name}</span>
+                      <button onClick={() => deleteFile(c.id, f.name)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                    </div>
+                  ))}
+                <input type="file" disabled={uploading} onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(c.id, f); e.target.value = '' }} style={{ marginTop: 8, fontSize: 13 }} />
+              </div>
+            )}
             </div>
           ))}
       </div>
