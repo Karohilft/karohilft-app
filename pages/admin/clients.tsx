@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
+import { formatCardNumber } from '../../lib/cardNumber'
 
 type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null }
 
@@ -65,7 +66,7 @@ export default function AdminClients() {
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
                   {printCard.city && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>{printCard.city}</div>}
                   {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)' }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
-                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>Nr. {printCard.card_number}</div>}
+                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <QRCodeSVG value={`${BASE_URL}/eintrag?k=${printCard.id}`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
@@ -118,7 +119,7 @@ export default function AdminClients() {
                 {(c.street || c.city) && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.zip, c.city].filter(Boolean).join(', ')}</div>}
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
                   {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
-                  Nr. {c.card_number ?? '–'}
+                  {formatCardNumber(c.card_number)}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

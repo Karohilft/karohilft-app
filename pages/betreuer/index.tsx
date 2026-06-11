@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import { formatCardNumber } from '../../lib/cardNumber'
 
 export default function BetreuerHome() {
   const router = useRouter()
@@ -41,7 +42,7 @@ export default function BetreuerHome() {
               <div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{name}</div>
                 {birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(birthdate).toLocaleDateString('de-AT')}</div>}
-                {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>Nr. {cardNumber}</div>}
+                {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(cardNumber)}</div>}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>

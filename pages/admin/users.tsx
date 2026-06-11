@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import { formatCardNumber } from '../../lib/cardNumber'
 
 type Caregiver = { id: string; name: string; email: string; phone: string; role: string; birthdate: string | null; card_number: number | null }
 
@@ -64,7 +65,7 @@ export default function AdminUsers() {
               <div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
                 {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
-                {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>Nr. {printCard.card_number}</div>}
+                {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(printCard.card_number)}</div>}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -122,7 +123,7 @@ export default function AdminUsers() {
                 {c.phone && <div style={{ fontSize: 14, color: 'var(--mid)' }}>{c.phone}</div>}
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
                   {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
-                  Nr. {c.card_number ?? '–'}
+                  {formatCardNumber(c.card_number)}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
