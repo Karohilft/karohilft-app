@@ -5,6 +5,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [birthdate, setBirthdate] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -26,7 +27,7 @@ export default function RegisterPage() {
     if (error) { setErr(error.message); setBusy(false); return }
 
     if (data.user) {
-      await getSupabase().from('caregivers').insert({ name, email, phone: phone || null, role: 'user' })
+      await getSupabase().from('caregivers').insert({ name, email, phone: phone || null, birthdate: birthdate || null, role: 'user' })
     }
 
     setBusy(false)
@@ -60,6 +61,9 @@ export default function RegisterPage() {
             <input placeholder="Name *" value={name} onChange={e => setName(e.target.value)} style={{ padding: '13px 16px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, margin: 0 }} />
             <input placeholder="E-Mail *" type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ padding: '13px 16px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, margin: 0 }} />
             <input placeholder="Telefon (optional)" type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={{ padding: '13px 16px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, margin: 0 }} />
+            <label style={{ fontSize: 13, color: 'var(--mid)' }}>Geburtsdatum
+              <input type="date" value={birthdate} onChange={e => setBirthdate(e.target.value)} style={{ display: 'block', marginTop: 4, padding: '13px 16px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, width: '100%' }} />
+            </label>
             <input placeholder="Passwort * (mind. 6 Zeichen)" type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ padding: '13px 16px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, margin: 0 }} />
 
             {err && <div style={{ color: '#C0392B', fontSize: 14, textAlign: 'center', padding: '8px 12px', background: 'rgba(192,57,43,.07)', borderRadius: 8 }}>{err}</div>}

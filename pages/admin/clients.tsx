@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 
-type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string }
+type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null }
 
 const BASE_URL = 'https://app.karohilft.at'
 
@@ -14,10 +14,10 @@ export default function AdminClients() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [printCard, setPrintCard] = useState<Client | null>(null)
-  const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '' })
+  const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' })
 
   async function load() {
-    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes').order('name')
+    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number').order('name')
     setClients((data as Client[]) || [])
     setLoading(false)
   }
@@ -32,8 +32,8 @@ export default function AdminClients() {
   async function save() {
     if (!form.name) return
     setSaving(true)
-    await getSupabase().from('clients').insert({ name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes })
-    setForm({ name: '', street: '', zip: '', city: '', notes: '' })
+    await getSupabase().from('clients').insert({ name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes, birthdate: form.birthdate || null })
+    setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' })
     setShowForm(false)
     setSaving(false)
     await load()
@@ -64,6 +64,8 @@ export default function AdminClients() {
                 <div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
                   {printCard.city && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>{printCard.city}</div>}
+                  {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)' }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
+                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>Nr. {printCard.card_number}</div>}
                 </div>
                 <QRCodeSVG value={`${BASE_URL}/eintrag?k=${printCard.id}`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
@@ -95,6 +97,9 @@ export default function AdminClients() {
                 <input placeholder="PLZ" value={form.zip} onChange={e => setForm(f => ({ ...f, zip: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
                 <input placeholder="Ort" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
               </div>
+              <label style={{ fontSize: 13, color: 'var(--mid)' }}>Geburtsdatum
+                <input type="date" value={form.birthdate} onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%' }} />
+              </label>
               <textarea placeholder="Notizen" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, resize: 'vertical' }} />
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
@@ -111,6 +116,10 @@ export default function AdminClients() {
               <div>
                 <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</div>
                 {(c.street || c.city) && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.zip, c.city].filter(Boolean).join(', ')}</div>}
+                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+                  {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
+                  Nr. {c.card_number ?? '–'}
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button onClick={() => setPrintCard(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte</button>
