@@ -92,11 +92,19 @@ export default function BetreuerPlan() {
   async function cancel(datum: string, it: Item) {
     if (!confirm(`Einsatz am ${fmtDate(datum)} (${hm(it.zeit_von)}–${hm(it.zeit_bis)}, ${it.client}) wirklich stornieren?\n\nDer Einsatz wird als "Noch zu vergeben" markiert und der Admin wird informiert.`)) return
     setCancelling(`${datum}-${it.kind}-${it.sourceId}`)
+    let err
     if (it.kind === 'schedule') {
-      await getSupabase().from('schedule').update({ caregiver_id: null, cancelled_by: caregiverName, cancelled_at: new Date().toISOString() }).eq('id', it.sourceId)
+      const r = await getSupabase().from('schedule').update({ caregiver_id: null, cancelled_by: caregiverName, cancelled_at: new Date().toISOString() }).eq('id', it.sourceId)
+      err = r.error
     } else {
-      await getSupabase().from('schedule_exceptions').insert({ rule_id: it.sourceId, datum })
-      await getSupabase().from('schedule').insert({ caregiver_id: null, client_id: it.client_id, datum, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, ort: it.ort, cancelled_by: caregiverName, cancelled_at: new Date().toISOString() })
+      const r1 = await getSupabase().from('schedule_exceptions').insert({ rule_id: it.sourceId, datum })
+      const r2 = await getSupabase().from('schedule').insert({ caregiver_id: null, client_id: it.client_id, datum, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, ort: it.ort, cancelled_by: caregiverName, cancelled_at: new Date().toISOString() })
+      err = r1.error || r2.error
+    }
+    if (err) {
+      alert('Fehler beim Stornieren: ' + err.message)
+      setCancelling(null)
+      return
     }
     await fetch('/api/notify-cancellation', {
       method: 'POST',
