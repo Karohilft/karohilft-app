@@ -104,8 +104,12 @@ export default function BetreuerEintrag() {
         <div style={{ fontSize: 56, marginBottom: 16 }}>✓</div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 8px' }}>Eingetragen!</h2>
         <p style={{ color: 'var(--mid)' }}>Dein Einsatz wurde gespeichert.</p>
-        <button onClick={() => { setDone(false); setForm({ client_id: '', zeit_von: '', zeit_bis: '' }); clearSig() }}
-          style={{ marginTop: 20, padding: '12px 28px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 16, cursor: 'pointer' }}>Neuer Eintrag</button>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20 }}>
+          <button onClick={() => router.push(confirmDatum ? '/betreuer/plan' : '/betreuer')}
+            style={{ padding: '12px 28px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--rose)', background: '#fff', color: 'var(--rose)', fontSize: 16, cursor: 'pointer' }}>Zurück</button>
+          <button onClick={() => { setDone(false); setForm({ client_id: '', zeit_von: '', zeit_bis: '' }); setConfirmDatum(null); setConfirmClientName(null); setNotiz(''); setCaregiverNoShow(false); clearSig() }}
+            style={{ padding: '12px 28px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 16, cursor: 'pointer' }}>Neuer Eintrag</button>
+        </div>
       </div>
     </div>
   )
