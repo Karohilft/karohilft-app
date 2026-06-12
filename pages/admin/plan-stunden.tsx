@@ -50,7 +50,7 @@ export default function AdminStundenplan() {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       const [{ data: cgs }, { data: cls }] = await Promise.all([
-        getSupabase().from('caregivers').select('id,name').order('name'),
+        getSupabase().from('caregivers').select('id,name').neq('role', 'admin').order('name'),
         getSupabase().from('clients').select('id,name').order('name'),
       ])
       setCaregiverOptions((cgs as any) || [])

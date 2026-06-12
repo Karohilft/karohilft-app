@@ -82,7 +82,7 @@ export default function AdminEinsatzplan() {
 
   async function load() {
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }] = await Promise.all([
-      getSupabase().from('caregivers').select('id,name,absent').order('name'),
+      getSupabase().from('caregivers').select('id,name,absent').neq('role', 'admin').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
       getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id').gte('datum', todayStr()).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').order('zeit_von'),
