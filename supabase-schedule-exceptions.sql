@@ -9,3 +9,13 @@ create table if not exists schedule_exceptions (
   created_at timestamptz default now(),
   unique (rule_id, datum)
 );
+
+alter table schedule_exceptions enable row level security;
+
+drop policy if exists "Authenticated read schedule_exceptions" on schedule_exceptions;
+create policy "Authenticated read schedule_exceptions" on schedule_exceptions
+  for select using (auth.role() = 'authenticated');
+
+drop policy if exists "Authenticated write schedule_exceptions" on schedule_exceptions;
+create policy "Authenticated write schedule_exceptions" on schedule_exceptions
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
