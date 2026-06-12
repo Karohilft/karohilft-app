@@ -23,8 +23,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     body: JSON.stringify({
       from: process.env.RESEND_FROM_EMAIL || 'Karohilft <onboarding@resend.dev>',
       to: recipients,
-      subject: `Einsatz storniert: ${dateLabel}`,
-      text: `${caregiver_name} hat folgenden Einsatz storniert:\n\nKlient/in: ${client_name}\nDatum: ${dateLabel}\nZeit: ${zeit_von?.slice(0, 5)}–${zeit_bis?.slice(0, 5)}\n\nDer Einsatz wurde als "Noch zu vergeben" in die Einsatzplanung verschoben.`,
+      subject: `Storno eines Einsatzes – ${dateLabel}`,
+      text: `Hallo,\n\n${caregiver_name} hat den folgenden Einsatz storniert:\n\nKlient/in: ${client_name}\nDatum: ${dateLabel}\nUhrzeit: ${zeit_von?.slice(0, 5)}–${zeit_bis?.slice(0, 5)}\n\nDer Einsatz wurde als "Noch zu vergeben" markiert und muss neu vergeben werden.\n\nViele Grüße\nKarohilft App`,
     }),
   })
 
