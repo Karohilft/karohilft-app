@@ -44,6 +44,8 @@ type UnassignedEntry = {
   zeit_von: string
   zeit_bis: string
   ort: string | null
+  cancelled_by: string | null
+  cancelled_at: string | null
   client: { name: string } | null
 }
 
@@ -86,7 +88,7 @@ export default function AdminUebersicht() {
         getSupabase().from('schedule').select('id,caregiver_id,client_id,zeit_von,zeit_bis,ort,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
         getSupabase().from('activities').select('id,caregiver_id,client_id,zeit_von,zeit_bis,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
         getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date,caregiver:caregivers(name),client:clients(name)'),
-        getSupabase().from('schedule').select('id,client_id,datum,zeit_von,zeit_bis,ort,client:clients(name)').is('caregiver_id', null).gte('datum', today).order('datum').order('zeit_von'),
+        getSupabase().from('schedule').select('id,client_id,datum,zeit_von,zeit_bis,ort,cancelled_by,cancelled_at,client:clients(name)').is('caregiver_id', null).gte('datum', today).order('datum').order('zeit_von'),
       ])
       setSchedule((sched as any) || [])
       setActivities((acts as any) || [])
@@ -143,6 +145,21 @@ export default function AdminUebersicht() {
           <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Übersicht heute</h1>
         </div>
+
+        {unassigned.some(e => e.cancelled_by) && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#C0392B', flexShrink: 0 }} />
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Kürzlich storniert</h2>
+            </div>
+            {unassigned.filter(e => e.cancelled_by).map(e => (
+              <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #C0392B' }}>
+                <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
+                <div style={{ fontSize: 13, color: '#C0392B', marginTop: 2 }}>Storniert von {e.cancelled_by}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {unassigned.length > 0 && (
           <div style={{ marginBottom: 20 }}>

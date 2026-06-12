@@ -93,10 +93,10 @@ export default function BetreuerPlan() {
     if (!confirm(`Einsatz am ${fmtDate(datum)} (${hm(it.zeit_von)}–${hm(it.zeit_bis)}, ${it.client}) wirklich stornieren?\n\nDer Einsatz wird als "Noch zu vergeben" markiert und der Admin wird informiert.`)) return
     setCancelling(`${datum}-${it.kind}-${it.sourceId}`)
     if (it.kind === 'schedule') {
-      await getSupabase().from('schedule').update({ caregiver_id: null }).eq('id', it.sourceId)
+      await getSupabase().from('schedule').update({ caregiver_id: null, cancelled_by: caregiverName, cancelled_at: new Date().toISOString() }).eq('id', it.sourceId)
     } else {
       await getSupabase().from('schedule_exceptions').insert({ rule_id: it.sourceId, datum })
-      await getSupabase().from('schedule').insert({ caregiver_id: null, client_id: it.client_id, datum, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, ort: it.ort })
+      await getSupabase().from('schedule').insert({ caregiver_id: null, client_id: it.client_id, datum, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, ort: it.ort, cancelled_by: caregiverName, cancelled_at: new Date().toISOString() })
     }
     await fetch('/api/notify-cancellation', {
       method: 'POST',
