@@ -166,15 +166,15 @@ export default function BetreuerEintrag() {
               </>
             )}
 
-            <div style={{ display: 'grid', gap: 8 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--dark)', cursor: 'pointer' }}>
-                <input type="checkbox" checked={clientNotHome} onChange={e => setClientNotHome(e.target.checked)} />
-                Klient/in war nicht zu Hause
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--dark)', cursor: 'pointer' }}>
-                <input type="checkbox" checked={caregiverNoShow} onChange={e => { setCaregiverNoShow(e.target.checked); if (e.target.checked) clearSig() }} />
-                Einsatz konnte nicht durchgeführt werden
-              </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <button type="button" onClick={() => setClientNotHome(v => !v)}
+                style={{ padding: '12px 10px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--rose)', background: clientNotHome ? 'var(--rose)' : '#fff', color: clientNotHome ? '#fff' : 'var(--rose)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', lineHeight: 1.3, transition: 'all .15s' }}>
+                Klient/in war<br />nicht zu Hause
+              </button>
+              <button type="button" onClick={() => { const v = !caregiverNoShow; setCaregiverNoShow(v); if (v) clearSig() }}
+                style={{ padding: '12px 10px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--rose)', background: caregiverNoShow ? 'var(--rose)' : '#fff', color: caregiverNoShow ? '#fff' : 'var(--rose)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', lineHeight: 1.3, transition: 'all .15s' }}>
+                Einsatz konnte nicht<br />durchgeführt werden
+              </button>
             </div>
 
             <div>
