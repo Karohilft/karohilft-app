@@ -19,6 +19,9 @@ export default function BetreuerEintrag() {
   const [drawing, setDrawing] = useState(false)
   const [confirmDatum, setConfirmDatum] = useState<string | null>(null)
   const [confirmClientName, setConfirmClientName] = useState<string | null>(null)
+  const [notiz, setNotiz] = useState('')
+  const [clientNotHome, setClientNotHome] = useState(false)
+  const [caregiverNoShow, setCaregiverNoShow] = useState(false)
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const todayISO = new Date().toISOString().split('T')[0]
 
@@ -74,9 +77,10 @@ export default function BetreuerEintrag() {
   }
 
   async function save() {
-    if (!form.client_id || !form.zeit_von || !form.zeit_bis || !signed) return
+    if (!form.client_id || !form.zeit_von || !form.zeit_bis) return
+    if (!caregiverNoShow && !signed) return
     setSaving(true)
-    const unterschrift = canvasRef.current!.toDataURL()
+    const unterschrift = caregiverNoShow ? null : canvasRef.current!.toDataURL()
     const clientName = confirmClientName || clients.find(c => c.id === form.client_id)?.name || null
     await getSupabase().from('activities').insert({
       caregiver_id: caregiverId,
@@ -87,6 +91,9 @@ export default function BetreuerEintrag() {
       zeit_von: form.zeit_von,
       zeit_bis: form.zeit_bis,
       unterschrift,
+      notiz: notiz || null,
+      client_not_home: clientNotHome,
+      caregiver_no_show: caregiverNoShow,
     })
     setSaving(false)
     setDone(true)
@@ -109,7 +116,10 @@ export default function BetreuerEintrag() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 28, paddingTop: 16 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28, paddingTop: 16, position: 'relative' }}>
+          {confirmDatum && (
+            <button onClick={() => router.push('/betreuer/plan')} style={{ position: 'absolute', left: 0, top: 16, background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+          )}
           <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 100, marginBottom: 8 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 4px' }}>{confirmDatum ? 'Einsatz bestätigen' : 'Einsatz eintragen'}</h1>
           <p style={{ color: 'var(--rose)', fontWeight: 500, margin: 0 }}>{confirmDatum ? new Date(confirmDatum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : today}</p>
@@ -118,10 +128,21 @@ export default function BetreuerEintrag() {
         <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ display: 'grid', gap: 16 }}>
             {confirmDatum ? (
-              <div style={{ background: 'var(--cream)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
-                <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{confirmClientName}</div>
-                <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{form.zeit_von}–{form.zeit_bis}</div>
-              </div>
+              <>
+                <div style={{ background: 'var(--cream)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{confirmClientName}</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit von</label>
+                    <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit bis</label>
+                    <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+              </>
             ) : (
               <>
                 <div>
@@ -145,19 +166,37 @@ export default function BetreuerEintrag() {
               </>
             )}
 
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label style={{ fontSize: 13, color: 'var(--mid)', fontWeight: 500 }}>Unterschrift</label>
-                {signed && <button onClick={clearSig} style={{ fontSize: 12, color: 'var(--rose)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Löschen</button>}
-              </div>
-              <canvas ref={canvasRef} width={400} height={120}
-                onPointerDown={startDraw} onPointerMove={draw} onPointerUp={endDraw} onPointerLeave={endDraw}
-                style={{ width: '100%', height: 120, border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', background: signed ? '#fffef9' : '#fafafa', touchAction: 'none', cursor: 'crosshair' }} />
-              {!signed && <p style={{ fontSize: 12, color: 'var(--mid)', margin: '4px 0 0', textAlign: 'center' }}>Bitte hier unterschreiben</p>}
+            <div style={{ display: 'grid', gap: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--dark)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={clientNotHome} onChange={e => setClientNotHome(e.target.checked)} />
+                Klient/in war nicht zu Hause
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--dark)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={caregiverNoShow} onChange={e => { setCaregiverNoShow(e.target.checked); if (e.target.checked) clearSig() }} />
+                Einsatz konnte nicht durchgeführt werden
+              </label>
             </div>
 
-            <button onClick={save} disabled={saving || !form.client_id || !form.zeit_von || !form.zeit_bis || !signed}
-              style={{ padding: '15px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 16, cursor: 'pointer', opacity: (!form.client_id || !form.zeit_von || !form.zeit_bis || !signed) ? 0.5 : 1, boxShadow: '0 6px 28px var(--rose-glow)', transition: 'all .3s' }}>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Notiz (optional)</label>
+              <textarea value={notiz} onChange={e => setNotiz(e.target.value)} rows={3} placeholder="z.B. Grund, Besonderheiten…" style={{ width: '100%', padding: '13px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }} />
+            </div>
+
+            {!caregiverNoShow && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ fontSize: 13, color: 'var(--mid)', fontWeight: 500 }}>Unterschrift</label>
+                  {signed && <button onClick={clearSig} style={{ fontSize: 12, color: 'var(--rose)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Löschen</button>}
+                </div>
+                <canvas ref={canvasRef} width={400} height={120}
+                  onPointerDown={startDraw} onPointerMove={draw} onPointerUp={endDraw} onPointerLeave={endDraw}
+                  style={{ width: '100%', height: 120, border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', background: signed ? '#fffef9' : '#fafafa', touchAction: 'none', cursor: 'crosshair' }} />
+                {!signed && <p style={{ fontSize: 12, color: 'var(--mid)', margin: '4px 0 0', textAlign: 'center' }}>Bitte hier unterschreiben</p>}
+              </div>
+            )}
+
+            <button onClick={save} disabled={saving || !form.client_id || !form.zeit_von || !form.zeit_bis || (!caregiverNoShow && !signed)}
+              style={{ padding: '15px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 16, cursor: 'pointer', opacity: (!form.client_id || !form.zeit_von || !form.zeit_bis || (!caregiverNoShow && !signed)) ? 0.5 : 1, boxShadow: '0 6px 28px var(--rose-glow)', transition: 'all .3s' }}>
               {saving ? 'Speichern…' : 'Einsatz speichern'}
             </button>
           </div>
