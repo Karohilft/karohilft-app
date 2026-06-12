@@ -17,8 +17,20 @@ export default function BetreuerEintrag() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [signed, setSigned] = useState(false)
   const [drawing, setDrawing] = useState(false)
+  const [confirmDatum, setConfirmDatum] = useState<string | null>(null)
+  const [confirmClientName, setConfirmClientName] = useState<string | null>(null)
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const todayISO = new Date().toISOString().split('T')[0]
+
+  useEffect(() => {
+    if (!router.isReady) return
+    const { client_id, zeit_von, zeit_bis, datum, client_name } = router.query
+    if (typeof client_id === 'string' && typeof zeit_von === 'string' && typeof zeit_bis === 'string') {
+      setForm({ client_id, zeit_von, zeit_bis })
+      if (typeof datum === 'string') setConfirmDatum(datum)
+      if (typeof client_name === 'string') setConfirmClientName(client_name)
+    }
+  }, [router.isReady, router.query])
 
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
@@ -65,13 +77,13 @@ export default function BetreuerEintrag() {
     if (!form.client_id || !form.zeit_von || !form.zeit_bis || !signed) return
     setSaving(true)
     const unterschrift = canvasRef.current!.toDataURL()
-    const clientName = clients.find(c => c.id === form.client_id)?.name || null
+    const clientName = confirmClientName || clients.find(c => c.id === form.client_id)?.name || null
     await getSupabase().from('activities').insert({
       caregiver_id: caregiverId,
       caregiver_name: caregiverName,
       client_id: form.client_id,
       client_name: clientName,
-      datum: todayISO,
+      datum: confirmDatum || todayISO,
       zeit_von: form.zeit_von,
       zeit_bis: form.zeit_bis,
       unterschrift,
@@ -99,30 +111,39 @@ export default function BetreuerEintrag() {
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 28, paddingTop: 16 }}>
           <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 100, marginBottom: 8 }} />
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 4px' }}>Einsatz eintragen</h1>
-          <p style={{ color: 'var(--rose)', fontWeight: 500, margin: 0 }}>{today}</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 4px' }}>{confirmDatum ? 'Einsatz bestätigen' : 'Einsatz eintragen'}</h1>
+          <p style={{ color: 'var(--rose)', fontWeight: 500, margin: 0 }}>{confirmDatum ? new Date(confirmDatum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : today}</p>
         </div>
 
         <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', boxShadow: 'var(--shadow-md)' }}>
           <div style={{ display: 'grid', gap: 16 }}>
-            <div>
-              <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Klient / Klientin</label>
-              <select value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} style={{ width: '100%', padding: '13px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, background: '#fff' }}>
-                <option value="">Bitte wählen…</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
+            {confirmDatum ? (
+              <div style={{ background: 'var(--cream)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
+                <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{confirmClientName}</div>
+                <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{form.zeit_von}–{form.zeit_bis}</div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Klient / Klientin</label>
+                  <select value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} style={{ width: '100%', padding: '13px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 16, background: '#fff' }}>
+                    <option value="">Bitte wählen…</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit von</label>
-                <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit bis</label>
-                <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
-              </div>
-            </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit von</label>
+                    <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit bis</label>
+                    <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>

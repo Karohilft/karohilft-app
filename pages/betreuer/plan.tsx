@@ -30,6 +30,7 @@ export default function BetreuerPlan() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [rules, setRules] = useState<Rule[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
@@ -57,19 +58,21 @@ export default function BetreuerPlan() {
   const clientName = (id: string) => clients.find(c => c.id === id)?.name || '–'
   const today = todayStr()
 
-  const days: { datum: string; items: { client: string; zeit_von: string; zeit_bis: string; ort: string | null }[] }[] = []
+  const days: { datum: string; items: { client_id: string; client: string; zeit_von: string; zeit_bis: string; ort: string | null }[] }[] = []
   for (let i = 0; i < 14; i++) {
     const datum = addDays(today, i)
-    const items: { client: string; zeit_von: string; zeit_bis: string; ort: string | null }[] = []
+    const items: { client_id: string; client: string; zeit_von: string; zeit_bis: string; ort: string | null }[] = []
     for (const e of entries.filter(e => e.datum === datum)) {
-      items.push({ client: clientName(e.client_id), zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort })
+      items.push({ client_id: e.client_id, client: clientName(e.client_id), zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort })
     }
     for (const r of rules.filter(r => r.start_date <= datum && r.weekdays.includes(weekdayOf(datum)))) {
-      items.push({ client: clientName(r.client_id), zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort })
+      items.push({ client_id: r.client_id, client: clientName(r.client_id), zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort })
     }
     items.sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
     if (items.length > 0) days.push({ datum, items })
   }
+
+  const visibleDays = showAll ? days : days.slice(0, 3)
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
@@ -81,17 +84,24 @@ export default function BetreuerPlan() {
 
         {days.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Keine kommenden Termine in den nächsten 14 Tagen.</div>
-          : days.map(({ datum, items }) => (
+          : visibleDays.map(({ datum, items }) => (
             <div key={datum} style={{ marginBottom: 16 }}>
               <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15, marginBottom: 6 }}>{datum === today ? 'Heute' : fmtDate(datum)}</div>
               {items.map((it, i) => (
-                <div key={i} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
+                <div key={i} onClick={() => router.push({ pathname: '/betreuer/eintrag', query: { client_id: it.client_id, client_name: it.client, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, datum } })}
+                  style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', cursor: 'pointer' }}>
                   <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{it.zeit_von}–{it.zeit_bis} · {it.client}</div>
                   {it.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{it.ort}</div>}
                 </div>
               ))}
             </div>
           ))}
+
+        {!showAll && days.length > 3 && (
+          <button onClick={() => setShowAll(true)} style={{ width: '100%', padding: '12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 14, cursor: 'pointer', marginTop: 4 }}>
+            Weitere Tage anzeigen
+          </button>
+        )}
       </div>
     </div>
   )
