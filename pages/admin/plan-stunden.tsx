@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 import TimeSelect from '../../components/TimeSelect'
+import { hm } from '../../lib/time'
 
 type Activity = {
   id: string
@@ -214,7 +215,7 @@ export default function AdminStundenplan() {
                           {(e.caregiver as any)?.name || e.caregiver_name || '–'} → {(e.client as any)?.name || e.client_name || '–'}
                         </div>
                         <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 3 }}>
-                          {e.datum} · {e.zeit_von} – {e.zeit_bis}
+                          {e.datum} · {hm(e.zeit_von)} – {hm(e.zeit_bis)}
                         </div>
                         {e.caregiver_no_show && (
                           <div style={{ marginTop: 6 }}>

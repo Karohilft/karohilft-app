@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import { hm } from '../../lib/time'
 
 type ScheduleEntry = {
   id: string
@@ -127,7 +128,7 @@ export default function AdminUebersicht() {
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
           : items.map(e => (
             <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${color}` }}>
-              <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{e.zeit_von}–{e.zeit_bis} · {e.caregiver} → {e.client}</div>
+              <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.caregiver} → {e.client}</div>
               {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{e.ort}</div>}
             </div>
           ))}
@@ -155,7 +156,7 @@ export default function AdminUebersicht() {
               return (
                 <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: urgent ? '4px solid var(--rose)' : '4px solid var(--mid)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {e.zeit_von}–{e.zeit_bis} · {e.client?.name || '–'}</div>
+                    <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
                     {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{e.ort}</div>}
                   </div>
                   {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}

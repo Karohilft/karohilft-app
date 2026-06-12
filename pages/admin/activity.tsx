@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import { hm } from '../../lib/time'
 
 type Activity = { id: string; name: string; datum: string; zeit_von: string; zeit_bis: string }
 
@@ -36,7 +37,7 @@ export default function AdminActivity() {
                 <div style={{ fontWeight: 600, color: 'var(--dark)' }}>{a.name}</div>
                 <div style={{ fontSize: 13, color: 'var(--muted)' }}>{a.datum}</div>
               </div>
-              {(a.zeit_von || a.zeit_bis) && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 4 }}>{a.zeit_von} – {a.zeit_bis}</div>}
+              {(a.zeit_von || a.zeit_bis) && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 4 }}>{hm(a.zeit_von)} – {hm(a.zeit_bis)}</div>}
             </div>
           ))}
       </div>

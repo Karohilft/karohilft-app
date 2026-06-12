@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import { hm } from '../../lib/time'
 
 type Entry = { id: string; client_id: string; datum: string; zeit_von: string; zeit_bis: string; ort: string | null }
 type Rule = { id: string; client_id: string; weekdays: number[]; zeit_von: string; zeit_bis: string; ort: string | null; start_date: string }
@@ -90,7 +91,7 @@ export default function BetreuerPlan() {
               {items.map((it, i) => (
                 <div key={i} onClick={() => router.push({ pathname: '/betreuer/eintrag', query: { client_id: it.client_id, client_name: it.client, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, datum } })}
                   style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', cursor: 'pointer' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{it.zeit_von}–{it.zeit_bis} · {it.client}</div>
+                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(it.zeit_von)}–{hm(it.zeit_bis)} · {it.client}</div>
                   {it.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{it.ort}</div>}
                 </div>
               ))}
