@@ -106,11 +106,13 @@ export default function BetreuerPlan() {
       setCancelling(null)
       return
     }
-    await fetch('/api/notify-cancellation', {
+    const notifyRes = await fetch('/api/notify-cancellation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ caregiver_name: caregiverName, client_name: it.client, datum, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis }),
     })
+    const notifyData = await notifyRes.json()
+    if (notifyData.skipped || notifyData.success === false) alert('E-Mail-Benachrichtigung: ' + JSON.stringify(notifyData))
     if (caregiverId) await load(caregiverId)
     setCancelling(null)
   }

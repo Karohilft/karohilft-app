@@ -11,13 +11,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!serviceKey || !apiKey) return res.status(200).json({ skipped: true })
 
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
-  const { data: admins } = await db.from('caregivers').select('email').eq('role', 'admin')
+  const { data: admins, error: dbError } = await db.from('caregivers').select('email').eq('role', 'admin')
+  if (dbError) return res.status(200).json({ skipped: true, reason: 'db_error', detail: dbError.message })
   const recipients = (admins || []).map(a => a.email).filter(Boolean)
-  if (recipients.length === 0) return res.status(200).json({ skipped: true })
+  if (recipients.length === 0) return res.status(200).json({ skipped: true, reason: 'no_recipients', admins })
 
   const dateLabel = new Date(datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })
 
-  await fetch('https://api.resend.com/emails', {
+  const resendRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
@@ -27,6 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       text: `Hallo,\n\n${caregiver_name} hat den folgenden Einsatz storniert:\n\nKlient/in: ${client_name}\nDatum: ${dateLabel}\nUhrzeit: ${zeit_von?.slice(0, 5)}–${zeit_bis?.slice(0, 5)}\n\nDer Einsatz wurde als "Noch zu vergeben" markiert und muss neu vergeben werden.\n\nViele Grüße\nKarohilft App`,
     }),
   })
+
+  if (!resendRes.ok) {
+    const detail = await resendRes.text()
+    return res.status(200).json({ success: false, status: resendRes.status, detail })
+  }
 
   return res.status(200).json({ success: true })
 }
