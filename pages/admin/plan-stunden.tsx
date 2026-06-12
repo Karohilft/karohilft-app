@@ -16,7 +16,6 @@ type Activity = {
   caregiver_name: string | null
   client_name: string | null
   notiz: string | null
-  client_not_home: boolean | null
   caregiver_no_show: boolean | null
 }
 
@@ -43,7 +42,7 @@ export default function AdminStundenplan() {
   async function load() {
     const { data: d } = await getSupabase()
       .from('activities')
-      .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver_id,client_id,caregiver_name,client_name,notiz,client_not_home,caregiver_no_show,caregiver:caregivers(name),client:clients(name)')
+      .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver_id,client_id,caregiver_name,client_name,notiz,caregiver_no_show,caregiver:caregivers(name),client:clients(name)')
       .order('datum', { ascending: false })
     setEntries((d as any) || [])
     setLoading(false)
@@ -217,10 +216,9 @@ export default function AdminStundenplan() {
                         <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 3 }}>
                           {e.datum} · {e.zeit_von} – {e.zeit_bis}
                         </div>
-                        {(e.client_not_home || e.caregiver_no_show) && (
-                          <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            {e.client_not_home && <span style={{ fontSize: 12, fontWeight: 600, color: '#B26A00', background: 'rgba(178,106,0,.1)', padding: '3px 10px', borderRadius: 'var(--r-pill)' }}>Klient nicht angetroffen – nicht verrechnen</span>}
-                            {e.caregiver_no_show && <span style={{ fontSize: 12, fontWeight: 600, color: '#C0392B', background: 'rgba(192,57,43,.1)', padding: '3px 10px', borderRadius: 'var(--r-pill)' }}>Einsatz nicht durchgeführt</span>}
+                        {e.caregiver_no_show && (
+                          <div style={{ marginTop: 6 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#C0392B', background: 'rgba(192,57,43,.1)', padding: '3px 10px', borderRadius: 'var(--r-pill)' }}>Einsatz nicht durchgeführt</span>
                           </div>
                         )}
                         {e.notiz && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 6, fontStyle: 'italic' }}>„{e.notiz}"</div>}

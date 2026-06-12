@@ -20,7 +20,6 @@ export default function BetreuerEintrag() {
   const [confirmDatum, setConfirmDatum] = useState<string | null>(null)
   const [confirmClientName, setConfirmClientName] = useState<string | null>(null)
   const [notiz, setNotiz] = useState('')
-  const [clientNotHome, setClientNotHome] = useState(false)
   const [caregiverNoShow, setCaregiverNoShow] = useState(false)
   const today = new Date().toLocaleDateString('de-AT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const todayISO = new Date().toISOString().split('T')[0]
@@ -77,10 +76,9 @@ export default function BetreuerEintrag() {
   }
 
   async function save() {
-    if (!form.client_id || !form.zeit_von || !form.zeit_bis) return
-    if (!caregiverNoShow && !signed) return
+    if (!form.client_id || !form.zeit_von || !form.zeit_bis || !signed) return
     setSaving(true)
-    const unterschrift = caregiverNoShow ? null : canvasRef.current!.toDataURL()
+    const unterschrift = canvasRef.current!.toDataURL()
     const clientName = confirmClientName || clients.find(c => c.id === form.client_id)?.name || null
     await getSupabase().from('activities').insert({
       caregiver_id: caregiverId,
@@ -92,7 +90,6 @@ export default function BetreuerEintrag() {
       zeit_bis: form.zeit_bis,
       unterschrift,
       notiz: notiz || null,
-      client_not_home: clientNotHome,
       caregiver_no_show: caregiverNoShow,
     })
     setSaving(false)
@@ -166,37 +163,29 @@ export default function BetreuerEintrag() {
               </>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <button type="button" onClick={() => setClientNotHome(v => !v)}
-                style={{ padding: '12px 10px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--rose)', background: clientNotHome ? 'var(--rose)' : '#fff', color: clientNotHome ? '#fff' : 'var(--rose)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', lineHeight: 1.3, transition: 'all .15s' }}>
-                Klient/in war<br />nicht zu Hause
-              </button>
-              <button type="button" onClick={() => { const v = !caregiverNoShow; setCaregiverNoShow(v); if (v) clearSig() }}
-                style={{ padding: '12px 10px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--rose)', background: caregiverNoShow ? 'var(--rose)' : '#fff', color: caregiverNoShow ? '#fff' : 'var(--rose)', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'center', lineHeight: 1.3, transition: 'all .15s' }}>
-                Einsatz konnte nicht<br />durchgeführt werden
-              </button>
-            </div>
+            <button type="button" onClick={() => setCaregiverNoShow(v => !v)}
+              style={{ padding: '12px 10px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--rose)', background: caregiverNoShow ? 'var(--rose)' : '#fff', color: caregiverNoShow ? '#fff' : 'var(--rose)', fontSize: 14, fontWeight: 500, cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}>
+              Einsatz konnte nicht durchgeführt werden
+            </button>
 
             <div>
               <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Notiz (optional)</label>
               <textarea value={notiz} onChange={e => setNotiz(e.target.value)} rows={3} placeholder="z.B. Grund, Besonderheiten…" style={{ width: '100%', padding: '13px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
 
-            {!caregiverNoShow && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label style={{ fontSize: 13, color: 'var(--mid)', fontWeight: 500 }}>Unterschrift</label>
-                  {signed && <button onClick={clearSig} style={{ fontSize: 12, color: 'var(--rose)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Löschen</button>}
-                </div>
-                <canvas ref={canvasRef} width={400} height={120}
-                  onPointerDown={startDraw} onPointerMove={draw} onPointerUp={endDraw} onPointerLeave={endDraw}
-                  style={{ width: '100%', height: 120, border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', background: signed ? '#fffef9' : '#fafafa', touchAction: 'none', cursor: 'crosshair' }} />
-                {!signed && <p style={{ fontSize: 12, color: 'var(--mid)', margin: '4px 0 0', textAlign: 'center' }}>Bitte hier unterschreiben</p>}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ fontSize: 13, color: 'var(--mid)', fontWeight: 500 }}>Unterschrift</label>
+                {signed && <button onClick={clearSig} style={{ fontSize: 12, color: 'var(--rose)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Löschen</button>}
               </div>
-            )}
+              <canvas ref={canvasRef} width={400} height={120}
+                onPointerDown={startDraw} onPointerMove={draw} onPointerUp={endDraw} onPointerLeave={endDraw}
+                style={{ width: '100%', height: 120, border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', background: signed ? '#fffef9' : '#fafafa', touchAction: 'none', cursor: 'crosshair' }} />
+              {!signed && <p style={{ fontSize: 12, color: 'var(--mid)', margin: '4px 0 0', textAlign: 'center' }}>Bitte hier unterschreiben</p>}
+            </div>
 
-            <button onClick={save} disabled={saving || !form.client_id || !form.zeit_von || !form.zeit_bis || (!caregiverNoShow && !signed)}
-              style={{ padding: '15px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 16, cursor: 'pointer', opacity: (!form.client_id || !form.zeit_von || !form.zeit_bis || (!caregiverNoShow && !signed)) ? 0.5 : 1, boxShadow: '0 6px 28px var(--rose-glow)', transition: 'all .3s' }}>
+            <button onClick={save} disabled={saving || !form.client_id || !form.zeit_von || !form.zeit_bis || !signed}
+              style={{ padding: '15px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 16, cursor: 'pointer', opacity: (!form.client_id || !form.zeit_von || !form.zeit_bis || !signed) ? 0.5 : 1, boxShadow: '0 6px 28px var(--rose-glow)', transition: 'all .3s' }}>
               {saving ? 'Speichern…' : 'Einsatz speichern'}
             </button>
           </div>
