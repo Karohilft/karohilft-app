@@ -55,10 +55,14 @@ export default function AdminUsers() {
   }
 
   async function del(id: string) {
-    if (!confirm('Betreuer löschen? Zugehörige Einsätze im Stundenplan werden ebenfalls gelöscht.')) return
-    await getSupabase().from('activities').delete().eq('caregiver_id', id)
-    const { error } = await getSupabase().from('caregivers').delete().eq('id', id)
-    if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
+    if (!confirm('Betreuer löschen? Geplante Einsätze im Stundenplan werden ebenfalls gelöscht und der Login-Zugang wird entfernt. Bereits erfasste Tätigkeitsnachweise bleiben aus Dokumentationspflicht erhalten.')) return
+    const { data: { session } } = await getSupabase().auth.getSession()
+    const res = await fetch('/api/admin/delete-caregiver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ id }),
+    })
+    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Löschen fehlgeschlagen: ' + (j.error || res.statusText)); return }
     await load()
   }
 

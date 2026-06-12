@@ -9,6 +9,7 @@ export default function BetreuerEintrag() {
   const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
   const [caregiverId, setCaregiverId] = useState<string | null>(null)
+  const [caregiverName, setCaregiverName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
@@ -23,8 +24,8 @@ export default function BetreuerEintrag() {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       const email = data.session.user.email
-      const { data: cg } = await getSupabase().from('caregivers').select('id').eq('email', email).single()
-      if (cg) setCaregiverId(cg.id)
+      const { data: cg } = await getSupabase().from('caregivers').select('id,name').eq('email', email).single()
+      if (cg) { setCaregiverId(cg.id); setCaregiverName(cg.name) }
       const { data: cl } = await getSupabase().from('clients').select('id,name').order('name')
       setClients((cl as Client[]) || [])
       setLoading(false)
@@ -64,9 +65,12 @@ export default function BetreuerEintrag() {
     if (!form.client_id || !form.zeit_von || !form.zeit_bis || !signed) return
     setSaving(true)
     const unterschrift = canvasRef.current!.toDataURL()
+    const clientName = clients.find(c => c.id === form.client_id)?.name || null
     await getSupabase().from('activities').insert({
       caregiver_id: caregiverId,
+      caregiver_name: caregiverName,
       client_id: form.client_id,
+      client_name: clientName,
       datum: todayISO,
       zeit_von: form.zeit_von,
       zeit_bis: form.zeit_bis,

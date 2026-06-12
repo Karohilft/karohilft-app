@@ -13,6 +13,8 @@ type Activity = {
   client_id: string | null
   caregiver: { name: string } | null
   client: { name: string } | null
+  caregiver_name: string | null
+  client_name: string | null
 }
 
 function calcHours(von: string, bis: string) {
@@ -38,7 +40,7 @@ export default function AdminStundenplan() {
   async function load() {
     const { data: d } = await getSupabase()
       .from('activities')
-      .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver_id,client_id,caregiver:caregivers(name),client:clients(name)')
+      .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver_id,client_id,caregiver_name,client_name,caregiver:caregivers(name),client:clients(name)')
       .order('datum', { ascending: false })
     setEntries((d as any) || [])
     setLoading(false)
@@ -102,13 +104,13 @@ export default function AdminStundenplan() {
     await load()
   }
 
-  const caregiverNames = [...new Set(entries.map(e => (e.caregiver as any)?.name).filter(Boolean))].sort()
-  const clientNames = [...new Set(entries.map(e => (e.client as any)?.name).filter(Boolean))].sort()
+  const caregiverNames = [...new Set(entries.map(e => (e.caregiver as any)?.name || e.caregiver_name).filter(Boolean))].sort()
+  const clientNames = [...new Set(entries.map(e => (e.client as any)?.name || e.client_name).filter(Boolean))].sort()
   const months = [...new Set(entries.map(e => e.datum?.substring(0, 7)).filter(Boolean))].sort().reverse()
 
   const filtered = entries.filter(e => {
-    if (filterCaregiver && (e.caregiver as any)?.name !== filterCaregiver) return false
-    if (filterClient && (e.client as any)?.name !== filterClient) return false
+    if (filterCaregiver && ((e.caregiver as any)?.name || e.caregiver_name) !== filterCaregiver) return false
+    if (filterClient && ((e.client as any)?.name || e.client_name) !== filterClient) return false
     if (filterMonth && !e.datum?.startsWith(filterMonth)) return false
     return true
   })
@@ -207,7 +209,7 @@ export default function AdminStundenplan() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                         <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>
-                          {(e.caregiver as any)?.name || '–'} → {(e.client as any)?.name || '–'}
+                          {(e.caregiver as any)?.name || e.caregiver_name || '–'} → {(e.client as any)?.name || e.client_name || '–'}
                         </div>
                         <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 3 }}>
                           {e.datum} · {e.zeit_von} – {e.zeit_bis}

@@ -54,8 +54,7 @@ export default function AdminClients() {
   }
 
   async function del(id: string) {
-    if (!confirm('Klient löschen? Zugehörige Einsätze im Stundenplan werden ebenfalls gelöscht.')) return
-    await getSupabase().from('activities').delete().eq('client_id', id)
+    if (!confirm('Klient löschen? Geplante Einsätze im Stundenplan werden ebenfalls gelöscht. Bereits erfasste Tätigkeitsnachweise bleiben aus Dokumentationspflicht erhalten.')) return
     const { error } = await getSupabase().from('clients').delete().eq('id', id)
     if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
     await load()
