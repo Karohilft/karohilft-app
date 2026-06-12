@@ -38,6 +38,13 @@ export default function LoginPage() {
       setErr(e.message || 'Unbekannter Fehler')
       return
     }
+    const { data: userData } = await getSupabase().auth.getUser()
+    if (userData?.user?.user_metadata?.must_change_password) {
+      router.replace('/update-password')
+      setBusy(false)
+      return
+    }
+
     const nextRaw = (router.query.next as string) || '/admin'
     let target: string
     try { target = decodeURIComponent(nextRaw) } catch { target = nextRaw }

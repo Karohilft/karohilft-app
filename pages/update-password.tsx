@@ -11,7 +11,7 @@ export default function UpdatePassword() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
-    const { error } = await getSupabase().auth.updateUser({ password })
+    const { error } = await getSupabase().auth.updateUser({ password, data: { must_change_password: false } })
     setBusy(false)
     if (error) { setErr(error.message); return }
     router.replace('/login')

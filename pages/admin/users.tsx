@@ -38,6 +38,16 @@ export default function AdminUsers() {
     const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, birthdate: form.birthdate || null, languages: form.languages || null, notes: form.notes || null }
     if (editingId) {
       await getSupabase().from('caregivers').update(payload).eq('id', editingId)
+    } else if (form.email) {
+      const tempPassword = Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4)
+      const { data: { session } } = await getSupabase().auth.getSession()
+      const res = await fetch('/api/admin/create-caregiver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ ...payload, password: tempPassword }),
+      })
+      if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Anlegen fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
+      alert(`Betreuer angelegt!\n\nEinmalpasswort für ${form.email}:\n${tempPassword}\n\nBeim ersten Login muss ein neues Passwort vergeben werden.`)
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }
