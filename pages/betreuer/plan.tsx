@@ -6,6 +6,7 @@ import { hm } from '../../lib/time'
 type Entry = { id: string; client_id: string; datum: string; zeit_von: string; zeit_bis: string; ort: string | null }
 type Rule = { id: string; client_id: string; weekdays: number[]; zeit_von: string; zeit_bis: string; ort: string | null; start_date: string }
 type Client = { id: string; name: string }
+type Exception = { rule_id: string; datum: string }
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -30,27 +31,38 @@ export default function BetreuerPlan() {
   const [loading, setLoading] = useState(true)
   const [entries, setEntries] = useState<Entry[]>([])
   const [rules, setRules] = useState<Rule[]>([])
+  const [exceptions, setExceptions] = useState<Exception[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [showAll, setShowAll] = useState(false)
+  const [caregiverId, setCaregiverId] = useState<string | null>(null)
+  const [caregiverName, setCaregiverName] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState<string | null>(null)
+
+  async function load(cgId: string) {
+    const today = todayStr()
+    const until = addDays(today, 13)
+    const [{ data: sched }, { data: rls }, { data: cls }, { data: exc }] = await Promise.all([
+      getSupabase().from('schedule').select('id,client_id,datum,zeit_von,zeit_bis,ort').eq('caregiver_id', cgId).gte('datum', today).lte('datum', until).order('datum').order('zeit_von'),
+      getSupabase().from('schedule_rules').select('id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').eq('caregiver_id', cgId),
+      getSupabase().from('clients').select('id,name'),
+      getSupabase().from('schedule_exceptions').select('rule_id,datum'),
+    ])
+    setEntries((sched as any) || [])
+    setRules((rls as any) || [])
+    setClients((cls as any) || [])
+    setExceptions((exc as any) || [])
+    setLoading(false)
+  }
 
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       const sessionEmail = data.session.user.email
-      const { data: cg } = await getSupabase().from('caregivers').select('id').eq('email', sessionEmail).single()
+      const { data: cg } = await getSupabase().from('caregivers').select('id,name').eq('email', sessionEmail).single()
       if (!cg) { setLoading(false); return }
-
-      const today = todayStr()
-      const until = addDays(today, 13)
-      const [{ data: sched }, { data: rls }, { data: cls }] = await Promise.all([
-        getSupabase().from('schedule').select('id,client_id,datum,zeit_von,zeit_bis,ort').eq('caregiver_id', cg.id).gte('datum', today).lte('datum', until).order('datum').order('zeit_von'),
-        getSupabase().from('schedule_rules').select('id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').eq('caregiver_id', cg.id),
-        getSupabase().from('clients').select('id,name'),
-      ])
-      setEntries((sched as any) || [])
-      setRules((rls as any) || [])
-      setClients((cls as any) || [])
-      setLoading(false)
+      setCaregiverId(cg.id)
+      setCaregiverName(cg.name)
+      await load(cg.id)
     })
   }, [router])
 
@@ -59,21 +71,41 @@ export default function BetreuerPlan() {
   const clientName = (id: string) => clients.find(c => c.id === id)?.name || '–'
   const today = todayStr()
 
-  const days: { datum: string; items: { client_id: string; client: string; zeit_von: string; zeit_bis: string; ort: string | null }[] }[] = []
+  type Item = { client_id: string; client: string; zeit_von: string; zeit_bis: string; ort: string | null; kind: 'schedule' | 'rule'; sourceId: string }
+
+  const days: { datum: string; items: Item[] }[] = []
   for (let i = 0; i < 14; i++) {
     const datum = addDays(today, i)
-    const items: { client_id: string; client: string; zeit_von: string; zeit_bis: string; ort: string | null }[] = []
+    const items: Item[] = []
     for (const e of entries.filter(e => e.datum === datum)) {
-      items.push({ client_id: e.client_id, client: clientName(e.client_id), zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort })
+      items.push({ client_id: e.client_id, client: clientName(e.client_id), zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort, kind: 'schedule', sourceId: e.id })
     }
-    for (const r of rules.filter(r => r.start_date <= datum && r.weekdays.includes(weekdayOf(datum)))) {
-      items.push({ client_id: r.client_id, client: clientName(r.client_id), zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort })
+    for (const r of rules.filter(r => r.start_date <= datum && r.weekdays.includes(weekdayOf(datum)) && !exceptions.some(ex => ex.rule_id === r.id && ex.datum === datum))) {
+      items.push({ client_id: r.client_id, client: clientName(r.client_id), zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort, kind: 'rule', sourceId: r.id })
     }
     items.sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
     if (items.length > 0) days.push({ datum, items })
   }
 
   const visibleDays = showAll ? days : days.slice(0, 3)
+
+  async function cancel(datum: string, it: Item) {
+    if (!confirm(`Einsatz am ${fmtDate(datum)} (${hm(it.zeit_von)}–${hm(it.zeit_bis)}, ${it.client}) wirklich stornieren?\n\nDer Einsatz wird als "Noch zu vergeben" markiert und der Admin wird informiert.`)) return
+    setCancelling(`${datum}-${it.kind}-${it.sourceId}`)
+    if (it.kind === 'schedule') {
+      await getSupabase().from('schedule').update({ caregiver_id: null }).eq('id', it.sourceId)
+    } else {
+      await getSupabase().from('schedule_exceptions').insert({ rule_id: it.sourceId, datum })
+      await getSupabase().from('schedule').insert({ caregiver_id: null, client_id: it.client_id, datum, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, ort: it.ort })
+    }
+    await fetch('/api/notify-cancellation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caregiver_name: caregiverName, client_name: it.client, datum, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis }),
+    })
+    if (caregiverId) await load(caregiverId)
+    setCancelling(null)
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
@@ -89,10 +121,18 @@ export default function BetreuerPlan() {
             <div key={datum} style={{ marginBottom: 16 }}>
               <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15, marginBottom: 6 }}>{datum === today ? 'Heute' : fmtDate(datum)}</div>
               {items.map((it, i) => (
-                <div key={i} onClick={() => router.push({ pathname: '/betreuer/eintrag', query: { client_id: it.client_id, client_name: it.client, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, datum } })}
-                  style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', cursor: 'pointer' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(it.zeit_von)}–{hm(it.zeit_bis)} · {it.client}</div>
-                  {it.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{it.ort}</div>}
+                <div key={i} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                    <div onClick={() => router.push({ pathname: '/betreuer/eintrag', query: { client_id: it.client_id, client_name: it.client, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, datum } })}
+                      style={{ cursor: 'pointer', flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(it.zeit_von)}–{hm(it.zeit_bis)} · {it.client}</div>
+                      {it.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{it.ort}</div>}
+                    </div>
+                    <button onClick={() => cancel(datum, it)} disabled={cancelling === `${datum}-${it.kind}-${it.sourceId}`}
+                      style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(192,57,43,.3)', background: '#fff', color: '#C0392B', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: cancelling ? 0.6 : 1 }}>
+                      Stornieren
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
