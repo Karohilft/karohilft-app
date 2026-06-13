@@ -81,13 +81,13 @@ export default function AdminClients() {
               @page { size: 86mm 55mm; margin: 0; }
               html, body {
                 margin: 0 !important; padding: 0 !important;
-                width: 86mm !important; height: 55mm !important;
-                overflow: hidden !important; background: white !important;
+                width: 86mm !important; height: auto !important; min-height: 110mm !important;
+                overflow: visible !important; background: white !important;
               }
               body > *:not(.print-area) { display: none !important; }
               .print-area {
                 display: block !important;
-                width: 86mm !important; margin: 0 !important; padding: 0 !important;
+                width: 86mm !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important;
               }
               .print-page {
                 display: block !important; position: relative !important;
@@ -150,7 +150,7 @@ export default function AdminClients() {
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setPrintCard(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Schließen</button>
-              <button onClick={() => setTimeout(() => window.print(), 100)} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Drucken</button>
+              <button onClick={() => setTimeout(() => { console.log('print pages:', document.querySelectorAll('.print-area .print-page').length); window.print() }, 100)} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Drucken</button>
             </div>
           </div>
         </div>
