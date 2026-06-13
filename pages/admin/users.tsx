@@ -157,8 +157,8 @@ export default function AdminUsers() {
               }
               .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
               .card-print {
-                position: absolute !important; inset: 0 !important;
-                width: 86mm !important; height: 55mm !important;
+                position: absolute !important; left: -1.5mm !important; top: -1mm !important;
+                width: 89mm !important; height: 57mm !important;
                 box-sizing: border-box !important; margin: 0 !important; padding: 6mm !important;
                 overflow: hidden !important;
                 transform: none !important; rotate: 0deg !important; scale: 1 !important; zoom: 1 !important;
