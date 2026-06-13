@@ -134,11 +134,13 @@ export default function AdminUsers() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <style>{`
             @media print {
-              @page { size: 86mm 54mm; margin: 0; }
+              @page { size: 55mm 86mm; margin: 0; }
               body * { visibility: hidden; }
               #print-card, #print-card *, #print-card-back, #print-card-back * { visibility: visible; }
               #print-card, #print-card-back {
+                position: absolute; top: 50%; left: 50%;
                 width: 86mm !important; height: 54mm !important;
+                transform: translate(-50%, -50%) rotate(90deg);
                 margin: 0 !important; border: none !important; border-radius: 0 !important;
                 box-shadow: none !important;
               }
