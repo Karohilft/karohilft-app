@@ -166,12 +166,8 @@ export default function AdminUsers() {
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
               </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#e0ddd9" strokeWidth="1.2">
-                  <path d="M3 11l9-8 9 8" />
-                  <path d="M5 10v10h14V10" />
-                  <path d="M9 21v-6a3 3 0 016 0v6" fill="none" stroke="var(--rose)" />
-                </svg>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontStyle: 'italic', color: 'var(--rose)' }}>Mit Herz betreut.</span>
               </div>
               <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>
                 +43 677 61482115 &nbsp;·&nbsp; office@karohilft.at &nbsp;·&nbsp; www.karohilft.at
