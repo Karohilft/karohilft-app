@@ -126,6 +126,19 @@ export default function AdminUsers() {
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
       {printCard && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <style>{`
+            @media print {
+              @page { size: 86mm 54mm; margin: 0; }
+              body * { visibility: hidden; }
+              #print-card, #print-card * { visibility: visible; }
+              #print-card {
+                position: absolute; top: 0; left: 0;
+                width: 86mm !important; height: 54mm !important;
+                margin: 0 !important; border: none !important; border-radius: 0 !important;
+                box-shadow: none !important;
+              }
+            }
+          `}</style>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Betreuerkarte drucken</h2>
             <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
