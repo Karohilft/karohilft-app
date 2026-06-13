@@ -162,17 +162,18 @@ export default function AdminUsers() {
                 <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${printCard.name}\nORG:Karohilft\nTEL:${printCard.phone || ''}\nEMAIL:${printCard.email || ''}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
-            <div id="print-card-back" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
-              <div style={{ fontSize: 11, color: 'var(--mid)' }}>
-                Gültig 1 Jahr ab Ausdruck, bis {validUntil()}
+            <div id="print-card-back" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--mid)', borderTop: '1px solid #e0ddd9', paddingTop: 8 }}>
-                Unterschrift Karteninhaber:
-                <div style={{ marginTop: 18, borderBottom: '1px solid #c9c4bc', width: '70%' }} />
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '75%', textAlign: 'center' }}>
+                  <div style={{ borderBottom: '1px solid #c9c4bc', marginBottom: 6 }} />
+                  <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>Unterschrift Karteninhaber</span>
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--mid)', borderTop: '1px solid #e0ddd9', paddingTop: 8 }}>
-                Bei Verlust bitte melden:<br />
-                Tel. +43 677 61482115 · office@karohilft.at · www.karohilft.at
+              <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>
+                +43 677 61482115 &nbsp;·&nbsp; office@karohilft.at &nbsp;·&nbsp; www.karohilft.at
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
