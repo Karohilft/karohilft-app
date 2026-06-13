@@ -140,7 +140,7 @@ export default function AdminUsers() {
               @page { size: 86mm 55mm; margin: 0; }
               html, body {
                 margin: 0 !important; padding: 0 !important;
-                width: 86mm !important; height: auto !important; min-height: 110mm !important;
+                width: 86mm !important; height: auto !important;
                 overflow: visible !important; background: white !important;
               }
               body > *:not(.print-area) { display: none !important; }
@@ -150,15 +150,18 @@ export default function AdminUsers() {
               }
               .print-page {
                 display: block !important; position: relative !important;
-                width: 86mm !important; height: 55mm !important;
+                width: 86mm !important; min-width: 86mm !important; max-width: 86mm !important;
+                height: 55mm !important; min-height: 55mm !important; max-height: 55mm !important;
                 margin: 0 !important; padding: 0 !important;
                 overflow: hidden !important;
                 page-break-after: always !important; break-after: page !important;
+                page-break-inside: avoid !important; break-inside: avoid !important;
               }
               .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
               .card-print {
                 position: absolute !important; left: -1.5mm !important; top: -1mm !important;
-                width: 89mm !important; height: 57mm !important;
+                width: 89mm !important; min-width: 89mm !important; max-width: 89mm !important;
+                height: 57mm !important; min-height: 57mm !important; max-height: 57mm !important;
                 box-sizing: border-box !important; margin: 0 !important; padding: 6mm !important;
                 overflow: hidden !important;
                 transform: none !important; rotate: 0deg !important; scale: 1 !important; zoom: 1 !important;
