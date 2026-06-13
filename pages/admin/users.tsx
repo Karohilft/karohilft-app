@@ -146,7 +146,7 @@ export default function AdminUsers() {
               #print-card, #print-card-back {
                 position: absolute; top: 50%; left: 50%;
                 width: 86mm !important; height: 54mm !important;
-                transform: translate(-50%, -50%) rotate(90deg);
+                transform: translate(-27mm, -43mm) rotate(90deg);
                 margin: 0 !important; border: none !important; border-radius: 0 !important;
                 box-shadow: none !important;
               }
