@@ -136,7 +136,12 @@ export default function AdminUsers() {
             @media print {
               @page { size: 55mm 86mm; margin: 0; }
               body * { visibility: hidden; }
-              #print-card, #print-card *, #print-card-back, #print-card-back * { visibility: visible; }
+              #print-page-front, #print-page-front *, #print-page-back, #print-page-back * { visibility: visible; }
+              #print-page-front, #print-page-back {
+                position: relative; width: 55mm !important; height: 86mm !important;
+                margin: 0 !important;
+              }
+              #print-page-front { page-break-after: always; }
               #print-card, #print-card-back {
                 position: absolute; top: 50%; left: 50%;
                 width: 86mm !important; height: 54mm !important;
@@ -144,11 +149,11 @@ export default function AdminUsers() {
                 margin: 0 !important; border: none !important; border-radius: 0 !important;
                 box-shadow: none !important;
               }
-              #print-card { page-break-after: always; }
             }
           `}</style>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Betreuerkarte drucken</h2>
+            <div id="print-page-front" style={{ position: 'relative' }}>
             <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
@@ -163,6 +168,8 @@ export default function AdminUsers() {
                 <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${printCard.name}\nORG:Karohilft\nTEL:${printCard.phone || ''}\nEMAIL:${printCard.email || ''}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
+            </div>
+            <div id="print-page-back" style={{ position: 'relative' }}>
             <div id="print-card-back" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
@@ -173,6 +180,7 @@ export default function AdminUsers() {
               <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>
                 +43 677 61482115 &nbsp;·&nbsp; office@karohilft.at &nbsp;·&nbsp; www.karohilft.at
               </div>
+            </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setPrintCard(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Schließen</button>
