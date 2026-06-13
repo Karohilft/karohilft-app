@@ -115,8 +115,8 @@ export default function AdminClients() {
               .card-print .card-id { position: absolute !important; left: 8mm !important; top: 46mm !important; font-size: 8pt !important; }
               .card-print .qr-code { position: absolute !important; right: 8mm !important; bottom: 7mm !important; width: 18mm !important; height: 18mm !important; }
               .card-print.back .valid-until { position: absolute !important; top: 8mm !important; right: 8mm !important; font-size: 8pt !important; }
-              .card-print.back .slogan { position: absolute !important; top: 24mm !important; left: 0 !important; width: 86mm !important; text-align: center !important; font-size: 11pt !important; }
-              .card-print.back .contact { position: absolute !important; bottom: 8mm !important; left: 0 !important; width: 86mm !important; text-align: center !important; font-size: 7.5pt !important; line-height: 1.5 !important; }
+              .card-print.back .slogan { position: absolute !important; top: 24mm !important; left: 0 !important; width: 100% !important; text-align: center !important; font-size: 11pt !important; }
+              .card-print.back .contact { position: absolute !important; bottom: 8mm !important; left: 0 !important; width: 100% !important; text-align: center !important; font-size: 7.5pt !important; line-height: 1.5 !important; }
             }
           `}</style>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
