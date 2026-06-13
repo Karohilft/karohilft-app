@@ -117,7 +117,7 @@ export default function AdminClients() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ marginBottom: 8 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
-                  {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)' }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
+                  {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)' }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>}
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <QRCodeSVG value={`${BASE_URL}/eintrag?k=${printCard.id}`} size={72} bgColor="transparent" fgColor="#1C1814" />
@@ -153,7 +153,7 @@ export default function AdminClients() {
                 </div>
                 <div style={{ position: 'absolute', left: 20, bottom: 28 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
-                  {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 4 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
+                  {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 4 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>}
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <div style={{ position: 'absolute', right: 20, bottom: 28 }}>
