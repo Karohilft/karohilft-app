@@ -109,14 +109,15 @@ export default function AdminClients() {
               }
               .card-print * { box-sizing: border-box !important; }
               .card-print .logo { position: absolute !important; left: 8mm !important; top: 8mm !important; width: 26mm !important; height: auto !important; }
-              .card-print .card-title { position: absolute !important; top: 8mm !important; right: 8mm !important; font-size: 10pt !important; letter-spacing: 1px !important; }
-              .card-print .person-name { position: absolute !important; left: 8mm !important; top: 29mm !important; font-size: 13pt !important; line-height: 1.1 !important; }
-              .card-print .birthdate { position: absolute !important; left: 8mm !important; top: 39mm !important; font-size: 8pt !important; }
-              .card-print .card-id { position: absolute !important; left: 8mm !important; top: 46mm !important; font-size: 8pt !important; }
+              .card-print .card-title { position: absolute !important; top: 8mm !important; right: 8mm !important; }
+              .card-print .person-name { position: absolute !important; left: 8mm !important; top: 29mm !important; }
+              .card-print .birthdate { position: absolute !important; left: 8mm !important; top: 39mm !important; }
+              .card-print .card-id { position: absolute !important; left: 8mm !important; top: 46mm !important; }
               .card-print .qr-code { position: absolute !important; right: 8mm !important; bottom: 7mm !important; width: 18mm !important; height: 18mm !important; }
-              .card-print.back .valid-until { position: absolute !important; top: 8mm !important; right: 8mm !important; font-size: 8pt !important; }
-              .card-print.back .slogan { position: absolute !important; top: 24mm !important; left: 0 !important; width: 100% !important; text-align: center !important; font-size: 11pt !important; }
-              .card-print.back .contact { position: absolute !important; bottom: 8mm !important; left: 0 !important; width: 100% !important; text-align: center !important; font-size: 7.5pt !important; line-height: 1.5 !important; }
+              .card-print.back .valid-until { position: absolute !important; top: 8mm !important; right: 8mm !important; }
+              .card-print.back .slogan { position: absolute !important; top: 24mm !important; left: 0 !important; width: 100% !important; text-align: center !important; }
+              .card-print.back .contact { position: absolute !important; bottom: 8mm !important; left: 0 !important; width: 100% !important; text-align: center !important; }
+              * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             }
           `}</style>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
@@ -159,18 +160,18 @@ export default function AdminClients() {
             <div className="print-page">
               <div id="print-card" className="card-print front">
                 <img src="/karohilft-logo.png" alt="Karohilft" className="logo" />
-                <span className="card-title">Klientenkarte</span>
-                <div className="person-name">{printCard.name}</div>
-                {printCard.birthdate && <div className="birthdate">geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
-                {printCard.card_number != null && <div className="card-id">{formatCardNumber(printCard.card_number)}</div>}
+                <span className="card-title" style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>Klientenkarte</span>
+                <div className="person-name" style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
+                {printCard.birthdate && <div className="birthdate" style={{ fontSize: 12, color: 'var(--mid)' }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
+                {printCard.card_number != null && <div className="card-id" style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(printCard.card_number)}</div>}
                 <QRCodeSVG value={`${BASE_URL}/eintrag?k=${printCard.id}`} className="qr-code" bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
             <div className="print-page">
               <div id="print-card-back" className="card-print back">
-                <span className="valid-until">GÜLTIG BIS {validUntil()}</span>
-                <span className="slogan">Verlässlich an Ihrer Seite.</span>
-                <div className="contact">
+                <span className="valid-until" style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
+                <span className="slogan" style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontStyle: 'italic', color: 'var(--rose)' }}>Verlässlich an Ihrer Seite.</span>
+                <div className="contact" style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>
                   +43 677 61482115 &nbsp;·&nbsp; office@karohilft.at &nbsp;·&nbsp; www.karohilft.at
                 </div>
               </div>
