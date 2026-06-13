@@ -6,6 +6,12 @@ import { formatCardNumber } from '../../lib/cardNumber'
 
 type Caregiver = { id: string; name: string; email: string; phone: string; role: string; birthdate: string | null; card_number: number | null; absent: boolean; languages: string | null; notes: string | null }
 
+function validUntil() {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() + 1)
+  return d.toLocaleDateString('de-AT')
+}
+
 export default function AdminUsers() {
   const router = useRouter()
   const [caregivers, setCaregivers] = useState<Caregiver[]>([])
@@ -130,13 +136,14 @@ export default function AdminUsers() {
             @media print {
               @page { size: 86mm 54mm; margin: 0; }
               body * { visibility: hidden; }
-              #print-card, #print-card * { visibility: visible; }
-              #print-card {
+              #print-card, #print-card *, #print-card-back, #print-card-back * { visibility: visible; }
+              #print-card, #print-card-back {
                 position: absolute; top: 0; left: 0;
                 width: 86mm !important; height: 54mm !important;
                 margin: 0 !important; border: none !important; border-radius: 0 !important;
                 box-shadow: none !important;
               }
+              #print-card { page-break-after: always; }
             }
           `}</style>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
@@ -153,6 +160,19 @@ export default function AdminUsers() {
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${printCard.name}\nORG:Karohilft\nTEL:${printCard.phone || ''}\nEMAIL:${printCard.email || ''}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
+              </div>
+            </div>
+            <div id="print-card-back" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
+              <div style={{ fontSize: 11, color: 'var(--mid)' }}>
+                Gültig 1 Jahr ab Ausdruck, bis {validUntil()}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--mid)', borderTop: '1px solid #e0ddd9', paddingTop: 8 }}>
+                Unterschrift Karteninhaber:
+                <div style={{ marginTop: 18, borderBottom: '1px solid #c9c4bc', width: '70%' }} />
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--mid)', borderTop: '1px solid #e0ddd9', paddingTop: 8 }}>
+                Bei Verlust bitte melden:<br />
+                Tel. +43 677 61482115 · office@karohilft.at · www.karohilft.at
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
