@@ -202,17 +202,19 @@ export default function AdminUsers() {
           {createPortal(
           <div className="print-area">
             <div className="print-page">
-              <div id="print-card" className="card-print front" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', padding: '16px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div id="print-card" className="card-print front" style={{ position: 'relative', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)' }}>
+                <div style={{ position: 'absolute', left: 20, top: 16 }}>
                   <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
-                  <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>Betreuerkarte</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
-                    {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
-                    {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(printCard.card_number)}</div>}
-                  </div>
+                <div style={{ position: 'absolute', right: 20, top: 24, fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>
+                  Betreuerkarte
+                </div>
+                <div style={{ position: 'absolute', left: 20, bottom: 28 }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
+                  {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 4 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT')}</div>}
+                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>{formatCardNumber(printCard.card_number)}</div>}
+                </div>
+                <div style={{ position: 'absolute', right: 20, bottom: 28 }}>
                   <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${printCard.name}\nORG:Karohilft\nTEL:${printCard.phone || ''}\nEMAIL:${printCard.email || ''}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
                 </div>
               </div>
