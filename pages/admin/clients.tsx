@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
@@ -72,6 +73,7 @@ export default function AdminClients() {
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
       {/* Print overlay */}
       {printCard && (
+        <>
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <style>{`
             .print-area { display: none; }
@@ -138,7 +140,9 @@ export default function AdminClients() {
               <button onClick={() => setTimeout(() => window.print(), 100)} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Drucken</button>
             </div>
           </div>
+        </div>
 
+          {createPortal(
           <div className="print-area">
             <div className="print-page">
               <div id="print-card" className="card-print front" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', padding: '16px 20px' }}>
@@ -169,8 +173,8 @@ export default function AdminClients() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </div>, document.body)}
+        </>
       )}
 
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
