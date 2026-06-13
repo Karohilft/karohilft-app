@@ -79,7 +79,6 @@ export default function AdminClients() {
               body * { visibility: hidden; }
               #print-card, #print-card *, #print-card-back, #print-card-back * { visibility: visible; }
               #print-card, #print-card-back {
-                position: absolute; top: 0; left: 0;
                 width: 86mm !important; height: 54mm !important;
                 margin: 0 !important; border: none !important; border-radius: 0 !important;
                 box-shadow: none !important;
