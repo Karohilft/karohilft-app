@@ -77,10 +77,11 @@ export default function AdminClients() {
           <style>{`
             @media print {
               @page { size: 55mm 86mm; margin: 0; }
+              html, body { width: 55mm !important; height: 86mm !important; overflow: hidden !important; margin: 0 !important; }
               body * { visibility: hidden; }
               #print-page-front, #print-page-front *, #print-page-back, #print-page-back * { visibility: visible; }
               #print-page-front, #print-page-back {
-                position: relative; width: 55mm !important; height: 86mm !important;
+                position: fixed; top: 0; left: 0; width: 55mm !important; height: 86mm !important;
                 margin: 0 !important;
               }
               #print-card, #print-card-back {
