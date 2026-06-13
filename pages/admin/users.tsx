@@ -140,7 +140,7 @@ export default function AdminUsers() {
               .print-page {
                 position: relative; width: 54mm; height: 86mm; overflow: hidden;
               }
-              .print-page:first-of-type { page-break-after: always; }
+              .print-page-front { page-break-after: always; }
               #print-card, #print-card-back {
                 position: absolute; top: 50%; left: 50%;
                 transform: translate(-50%, -50%) rotate(90deg);
@@ -152,7 +152,7 @@ export default function AdminUsers() {
           `}</style>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Betreuerkarte drucken</h2>
-            <div className="print-page">
+            <div className="print-page print-page-front">
             <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
