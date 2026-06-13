@@ -109,10 +109,11 @@ export default function AdminClients() {
                 <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
               </div>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '75%', textAlign: 'center' }}>
-                  <div style={{ borderBottom: '1px solid #c9c4bc', marginBottom: 6 }} />
-                  <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>Unterschrift Karteninhaber</span>
-                </div>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#e0ddd9" strokeWidth="1.2">
+                  <path d="M3 11l9-8 9 8" />
+                  <path d="M5 10v10h14V10" />
+                  <path d="M9 21v-6a3 3 0 016 0v6" fill="none" stroke="var(--rose)" />
+                </svg>
               </div>
               <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>
                 +43 677 61482115 &nbsp;·&nbsp; office@karohilft.at &nbsp;·&nbsp; www.karohilft.at
