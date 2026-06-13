@@ -20,7 +20,6 @@ export default function AdminUsers() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' })
   const [printCard, setPrintCard] = useState<Caregiver | null>(null)
-  const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filesOpenId, setFilesOpenId] = useState<string | null>(null)
   const [files, setFiles] = useState<{ name: string }[]>([])
@@ -136,13 +135,14 @@ export default function AdminUsers() {
           <style>{`
             @media print {
               @page { size: 55mm 86mm; margin: 0; }
-              html, body { width: 55mm !important; height: 86mm !important; overflow: hidden !important; margin: 0 !important; }
+              html, body { width: 55mm !important; height: 172mm !important; overflow: hidden !important; margin: 0 !important; }
               body * { visibility: hidden; }
               #print-page-front, #print-page-front *, #print-page-back, #print-page-back * { visibility: visible; }
               #print-page-front, #print-page-back {
-                position: fixed; top: 0; left: 0; width: 55mm !important; height: 86mm !important;
+                position: relative; width: 55mm !important; height: 86mm !important;
                 margin: 0 !important;
               }
+              #print-page-front { page-break-after: always; }
               #print-card, #print-card-back {
                 position: absolute; top: 50%; left: 50%;
                 width: 86mm !important; height: 54mm !important;
@@ -150,11 +150,9 @@ export default function AdminUsers() {
                 margin: 0 !important; border: none !important; border-radius: 0 !important;
                 box-shadow: none !important;
               }
-              .printing-front #print-page-back { display: none !important; }
-              .printing-back #print-page-front { display: none !important; }
             }
           `}</style>
-          <div className={printSide === 'front' ? 'printing-front' : 'printing-back'} style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Betreuerkarte drucken</h2>
             <div id="print-page-front" style={{ position: 'relative' }}>
             <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
@@ -187,8 +185,7 @@ export default function AdminUsers() {
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setPrintCard(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Schließen</button>
-              <button onClick={() => { setPrintSide('front'); setTimeout(() => window.print(), 0) }} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontWeight: 500, cursor: 'pointer' }}>Vorderseite drucken</button>
-              <button onClick={() => { setPrintSide('back'); setTimeout(() => window.print(), 0) }} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Rückseite drucken</button>
+              <button onClick={() => window.print()} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Drucken</button>
             </div>
           </div>
         </div>
