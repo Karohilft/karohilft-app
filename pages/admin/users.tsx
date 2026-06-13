@@ -134,27 +134,29 @@ export default function AdminUsers() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <style>{`
             @media print {
-              @page { size: 172mm 55mm; margin: 0; }
-              html, body { width: 172mm !important; height: 55mm !important; overflow: hidden !important; margin: 0 !important; }
-              body * { visibility: hidden; }
-              #print-page, #print-page * { visibility: visible; }
-              #print-page {
-                position: fixed; top: 0; left: 0;
-                width: 172mm !important; height: 55mm !important;
-                display: flex !important; flex-direction: row !important;
-                margin: 0 !important; transform: none !important; zoom: 1;
+              @page { size: 86mm 55mm; margin: 0; }
+              html, body {
+                width: 86mm !important; height: auto !important;
+                margin: 0 !important; padding: 0 !important;
+                overflow: visible !important; background: white !important;
               }
+              body * { visibility: hidden !important; }
+              #print-card, #print-card *, #print-card-back, #print-card-back * { visibility: visible !important; }
               #print-card, #print-card-back {
+                position: relative !important; display: block !important;
                 width: 86mm !important; height: 55mm !important;
-                margin: 0 !important; border: none !important; border-radius: 0 !important;
-                box-shadow: none !important; transform: none !important; flex-shrink: 0;
+                margin: 0 !important; padding: 0 !important;
+                border: none !important; border-radius: 0 !important; box-shadow: none !important;
+                transform: none !important; rotate: 0deg !important; scale: 1 !important; zoom: 1 !important;
+                writing-mode: horizontal-tb !important; overflow: hidden !important;
               }
+              #print-card { page-break-after: always !important; break-after: page !important; }
+              #print-card-back { page-break-after: auto !important; break-after: auto !important; }
             }
           `}</style>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Betreuerkarte drucken</h2>
-            <div id="print-page" style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
-            <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)' }}>
+            <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
                 <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>Betreuerkarte</span>
@@ -168,7 +170,7 @@ export default function AdminUsers() {
                 <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${printCard.name}\nORG:Karohilft\nTEL:${printCard.phone || ''}\nEMAIL:${printCard.email || ''}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
-            <div id="print-card-back" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)' }}>
+            <div id="print-card-back" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
               </div>
@@ -179,10 +181,9 @@ export default function AdminUsers() {
                 +43 677 61482115 &nbsp;·&nbsp; office@karohilft.at &nbsp;·&nbsp; www.karohilft.at
               </div>
             </div>
-            </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setPrintCard(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Schließen</button>
-              <button onClick={() => window.print()} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Drucken</button>
+              <button onClick={() => { document.body.classList.add('printing-card'); setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('printing-card'), 500) }, 100) }} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Drucken</button>
             </div>
           </div>
         </div>
