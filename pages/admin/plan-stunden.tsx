@@ -120,6 +120,25 @@ export default function AdminStundenplan() {
 
   const totalHours = filtered.reduce((s, e) => s + calcHours(e.zeit_von, e.zeit_bis), 0)
 
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  function toggleGroup(name: string) {
+    setOpenGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name); else next.add(name)
+      return next
+    })
+  }
+
+  const groups: { name: string; items: Activity[]; hours: number }[] = []
+  for (const e of filtered) {
+    const name = (e.caregiver as any)?.name || e.caregiver_name || '–'
+    let g = groups.find(g => g.name === name)
+    if (!g) { g = { name, items: [], hours: 0 }; groups.push(g) }
+    g.items.push(e)
+    g.hours += calcHours(e.zeit_von, e.zeit_bis)
+  }
+  groups.sort((a, b) => a.name.localeCompare(b.name))
+
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
 
   return (
@@ -180,7 +199,20 @@ export default function AdminStundenplan() {
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Keine Einträge gefunden.</div>
           : (
             <div>
-              {filtered.map(e => {
+              {groups.map(g => {
+              const open = openGroups.has(g.name)
+              return (
+              <div key={g.name} style={{ marginBottom: 12 }}>
+                <button onClick={() => toggleGroup(g.name)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: '#fff', borderRadius: 'var(--r-md)', border: 'none', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', textAlign: 'left' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>
+                    <span style={{ display: 'inline-block', transition: 'transform .15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>›</span>
+                    {g.name}
+                    <span style={{ fontSize: 13, color: 'var(--mid)', fontWeight: 400 }}>({g.items.length})</span>
+                  </span>
+                  <span style={{ fontWeight: 700, color: 'var(--rose)' }}>{Math.round(g.hours * 10) / 10}h</span>
+                </button>
+                {open && <div style={{ marginTop: 8 }}>
+              {g.items.map(e => {
                 const h = calcHours(e.zeit_von, e.zeit_bis)
                 if (editingId === e.id) {
                   return (
@@ -236,6 +268,9 @@ export default function AdminStundenplan() {
                   </div>
                 )
               })}
+                </div>}
+              </div>
+              )})}
               <div style={{ marginTop: 16, padding: '14px 18px', background: 'rgba(196,124,90,.08)', borderRadius: 'var(--r-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 600, color: 'var(--dark)' }}>Gesamt{filterCaregiver || filterClient || filterMonth ? ' (gefiltert)' : ''}:</span>
                 <span style={{ fontWeight: 700, fontSize: 22, color: 'var(--rose)' }}>{Math.round(totalHours * 10) / 10}h</span>
