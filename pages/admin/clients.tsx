@@ -100,8 +100,8 @@ export default function AdminClients() {
               }
               .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
               .card-print {
-                position: absolute !important; left: -1.5mm !important; top: -1mm !important;
-                width: 89mm !important; height: 57mm !important;
+                position: absolute !important; left: 2mm !important; top: 2mm !important;
+                width: 82mm !important; height: 51mm !important;
                 margin: 0 !important; box-sizing: border-box !important; overflow: hidden !important;
               }
             }
