@@ -198,7 +198,7 @@ export default function AdminStundenplan() {
         {filtered.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Keine Einträge gefunden.</div>
           : (
-            <div>
+            <div className="screen-only">
               {groups.map(g => {
               const open = openGroups.has(g.name)
               return (
@@ -277,6 +277,53 @@ export default function AdminStundenplan() {
               </div>
             </div>
           )}
+
+        {filtered.length > 0 && (
+          <div className="print-only">
+            {groups.map(g => (
+              <div key={g.name} style={{ marginBottom: 14, breakInside: 'avoid' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 15, margin: '0 0 4px', color: 'var(--dark)' }}>{g.name}</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #ccc', textAlign: 'left' }}>
+                      <th style={{ padding: '3px 6px' }}>Datum</th>
+                      <th style={{ padding: '3px 6px' }}>Zeit</th>
+                      <th style={{ padding: '3px 6px' }}>Klient</th>
+                      <th style={{ padding: '3px 6px', textAlign: 'right' }}>Stunden</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.items.map(e => (
+                      <tr key={e.id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: '3px 6px' }}>{e.datum}</td>
+                        <td style={{ padding: '3px 6px' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}</td>
+                        <td style={{ padding: '3px 6px' }}>{(e.client as any)?.name || e.client_name || '–'}</td>
+                        <td style={{ padding: '3px 6px', textAlign: 'right' }}>{calcHours(e.zeit_von, e.zeit_bis)}h</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan={3} style={{ padding: '4px 6px', fontWeight: 600, textAlign: 'right' }}>Summe</td>
+                      <td style={{ padding: '4px 6px', fontWeight: 600, textAlign: 'right' }}>{Math.round(g.hours * 10) / 10}h</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            ))}
+            <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 14, borderTop: '2px solid #999', paddingTop: 6 }}>
+              <span>Gesamt{filterCaregiver || filterClient || filterMonth ? ' (gefiltert)' : ''}:</span>
+              <span>{Math.round(totalHours * 10) / 10}h</span>
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          .print-only { display: none; }
+          @media print {
+            .no-print { display: none !important; }
+            .screen-only { display: none !important; }
+            .print-only { display: block !important; }
+          }
+        `}</style>
       </div>
     </div>
   )
