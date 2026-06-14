@@ -22,6 +22,7 @@ export default function AdminClients() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [printCard, setPrintCard] = useState<Client | null>(null)
+  const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' })
 
@@ -99,6 +100,8 @@ export default function AdminClients() {
                 page-break-inside: avoid !important; break-inside: avoid !important;
               }
               .print-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+              .print-area[data-side="front"] .print-page.back { display: none !important; }
+              .print-area[data-side="back"] .print-page.front { display: none !important; }
               .card-print {
                 position: absolute !important; left: 2mm !important; top: 2mm !important;
                 width: 82mm !important; height: 51mm !important;
@@ -136,14 +139,15 @@ export default function AdminClients() {
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setPrintCard(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Schließen</button>
-              <button onClick={() => setTimeout(() => { console.log('print pages:', document.querySelectorAll('.print-area .print-page').length); window.print() }, 100)} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Drucken</button>
+              <button onClick={() => { setPrintSide('front'); setTimeout(() => window.print(), 100) }} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Vorderseite drucken</button>
+              <button onClick={() => { setPrintSide('back'); setTimeout(() => window.print(), 100) }} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Rückseite drucken</button>
             </div>
           </div>
         </div>
 
           {createPortal(
-          <div className="print-area">
-            <div className="print-page">
+          <div className="print-area" data-side={printSide}>
+            <div className="print-page front">
               <div id="print-card" className="card-print front" style={{ position: 'relative', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)' }}>
                 <div style={{ position: 'absolute', left: 20, top: 16 }}>
                   <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
@@ -161,7 +165,7 @@ export default function AdminClients() {
                 </div>
               </div>
             </div>
-            <div className="print-page">
+            <div className="print-page back">
               <div id="print-card-back" className="card-print back" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', padding: '18px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
