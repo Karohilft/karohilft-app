@@ -5,11 +5,11 @@ import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 
-type Caregiver = { id: string; name: string; email: string; phone: string; role: string; birthdate: string | null; card_number: number | null; absent: boolean; languages: string | null; notes: string | null }
+type Caregiver = { id: string; name: string; email: string; phone: string; role: string; card_type: string; birthdate: string | null; card_number: number | null; absent: boolean; languages: string | null; notes: string | null }
 
-function validUntil() {
+function validUntil(cardType?: string) {
   const d = new Date()
-  d.setFullYear(d.getFullYear() + 1)
+  d.setFullYear(d.getFullYear() + (cardType === 'geschaeftsfuehrung' ? 5 : 1))
   return d.toLocaleDateString('de-AT')
 }
 
@@ -19,7 +19,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' })
   const [printCard, setPrintCard] = useState<Caregiver | null>(null)
   const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -28,7 +28,7 @@ export default function AdminUsers() {
   const [uploading, setUploading] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,birthdate,card_number,absent,languages,notes').order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,languages,notes').order('name')
     setCaregivers((data as Caregiver[]) || [])
     setLoading(false)
   }
@@ -43,7 +43,7 @@ export default function AdminUsers() {
   async function save() {
     if (!form.name) return
     setSaving(true)
-    const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, birthdate: form.birthdate || null, languages: form.languages || null, notes: form.notes || null }
+    const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, card_type: form.card_type, birthdate: form.birthdate || null, languages: form.languages || null, notes: form.notes || null }
     if (editingId) {
       await getSupabase().from('caregivers').update(payload).eq('id', editingId)
     } else if (form.email) {
@@ -59,7 +59,7 @@ export default function AdminUsers() {
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }
-    setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' })
+    setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' })
     setEditingId(null)
     setShowForm(false)
     setSaving(false)
@@ -67,7 +67,7 @@ export default function AdminUsers() {
   }
 
   function edit(c: Caregiver) {
-    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, birthdate: c.birthdate || '', languages: c.languages || '', notes: c.notes || '' })
+    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, card_type: c.card_type || 'team', birthdate: c.birthdate || '', languages: c.languages || '', notes: c.notes || '' })
     setEditingId(c.id)
     setShowForm(true)
   }
@@ -173,7 +173,7 @@ export default function AdminUsers() {
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
-                <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>Betreuerkarte</span>
+                <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>{printCard.card_type === 'geschaeftsfuehrung' ? 'Karohilft Geschäftsführung' : 'Karohilft Betreuungsteam'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ marginBottom: 8 }}>
@@ -186,7 +186,7 @@ export default function AdminUsers() {
             </div>
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
+                <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil(printCard.card_type)}</span>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 6 }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontStyle: 'italic', color: 'var(--rose)' }}>Verlässlich an Ihrer Seite.</span>
@@ -212,7 +212,7 @@ export default function AdminUsers() {
                   <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 42 }} />
                 </div>
                 <div style={{ position: 'absolute', right: 20, top: 24, fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>
-                  Betreuerkarte
+                  {printCard.card_type === 'geschaeftsfuehrung' ? 'Karohilft Geschäftsführung' : 'Karohilft Betreuungsteam'}
                 </div>
                 <div style={{ position: 'absolute', left: 20, bottom: 28 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
@@ -227,7 +227,7 @@ export default function AdminUsers() {
             <div className="print-page back">
               <div id="print-card-back" className="card-print back" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: '#fff', padding: '14px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
+                  <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil(printCard.card_type)}</span>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 4 }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontStyle: 'italic', color: 'var(--rose)' }}>Verlässlich an Ihrer Seite.</span>
@@ -247,7 +247,7 @@ export default function AdminUsers() {
             <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Betreuer</h1>
           </div>
-          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
+          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
         </div>
 
         {showForm && (
@@ -261,13 +261,18 @@ export default function AdminUsers() {
                 <option value="user">Betreuer</option>
                 <option value="admin">Admin</option>
               </select>
+              <label style={{ fontSize: 13, color: 'var(--mid)' }}>Kartentyp</label>
+              <select value={form.card_type} onChange={e => setForm(f => ({ ...f, card_type: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
+                <option value="team">Betreuungsteam</option>
+                <option value="geschaeftsfuehrung">Geschäftsführung</option>
+              </select>
               <label style={{ fontSize: 13, color: 'var(--mid)' }}>Geburtsdatum
                 <input type="date" value={form.birthdate} onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%' }} />
               </label>
               <input placeholder="Sprachen (z.B. Deutsch, Englisch)" value={form.languages} onChange={e => setForm(f => ({ ...f, languages: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
               <textarea placeholder="Sonstiges" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, fontFamily: 'inherit', resize: 'vertical' }} />
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', birthdate: '', languages: '', notes: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
+                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
                 <button onClick={save} disabled={saving || !form.name} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving || !form.name ? 0.6 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
               </div>
             </div>
