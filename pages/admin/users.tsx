@@ -172,7 +172,7 @@ export default function AdminUsers() {
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Betreuerkarte drucken</h2>
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 40 }} />
+                <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 40 }} />
                 <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>{printCard.card_type === 'geschaeftsfuehrung' ? 'Geschäftsführung' : 'Betreuungsteam'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -209,7 +209,7 @@ export default function AdminUsers() {
             <div className="print-page front">
               <div id="print-card" className="card-print front" style={{ position: 'relative', background: '#fff' }}>
                 <div style={{ position: 'absolute', left: 14, top: 16 }}>
-                  <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 47 }} />
+                  <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 47 }} />
                 </div>
                 <div style={{ position: 'absolute', right: 20, top: 22, fontSize: 10, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>
                   {printCard.card_type === 'geschaeftsfuehrung' ? 'Geschäftsführung' : 'Betreuungsteam'}

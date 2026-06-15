@@ -114,7 +114,7 @@ export default function AdminClients() {
             {/* Card preview – CR80 ratio 85.6:54 */}
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 40 }} />
+                <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 40 }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ marginBottom: 8 }}>
@@ -150,7 +150,7 @@ export default function AdminClients() {
             <div className="print-page front">
               <div id="print-card" className="card-print front" style={{ position: 'relative', background: '#fff' }}>
                 <div style={{ position: 'absolute', left: 14, top: 16 }}>
-                  <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 47 }} />
+                  <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 47 }} />
                 </div>
                 <div style={{ position: 'absolute', left: 20, bottom: 28 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
