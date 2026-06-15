@@ -79,6 +79,8 @@ export default function AdminUebersicht() {
   const [activities, setActivities] = useState<ActivityEntry[]>([])
   const [rules, setRules] = useState<RuleEntry[]>([])
   const [unassigned, setUnassigned] = useState<UnassignedEntry[]>([])
+  const [showDone, setShowDone] = useState(false)
+  const [showFuture, setShowFuture] = useState(false)
 
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
@@ -118,15 +120,17 @@ export default function AdminUebersicht() {
   const abgeschlossen = allEntries.filter(e => isDone(e))
   const extraAbgeschlossen = activities.filter(a => !allEntries.some(e => e.caregiver_id === a.caregiver_id && e.client_id === a.client_id && e.zeit_von === a.zeit_von))
 
-  function Section({ title, color, items }: { title: string; color: string; items: { id: string; caregiver: string; client: string; zeit_von: string; zeit_bis: string; ort?: string | null }[] }) {
+  function Section({ title, color, items, collapsible, open, onToggle }: { title: string; color: string; items: { id: string; caregiver: string; client: string; zeit_von: string; zeit_bis: string; ort?: string | null }[]; collapsible?: boolean; open?: boolean; onToggle?: () => void }) {
+    const isOpen = !collapsible || open
     return (
       <div style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div onClick={collapsible ? onToggle : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, cursor: collapsible ? 'pointer' : 'default' }}>
           <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>{title}</h2>
           <span style={{ fontSize: 13, color: 'var(--mid)' }}>({items.length})</span>
+          {collapsible && <span style={{ color: 'var(--rose)', fontSize: 14, marginLeft: 'auto' }}>{isOpen ? '▲' : '▼'}</span>}
         </div>
-        {items.length === 0
+        {!isOpen ? null : items.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
           : items.map(e => (
             <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${color}` }}>
@@ -161,31 +165,44 @@ export default function AdminUebersicht() {
           </div>
         )}
 
-        {unassigned.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--rose)', flexShrink: 0 }} />
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Noch zu vergeben</h2>
-              <span style={{ fontSize: 13, color: 'var(--mid)' }}>({unassigned.length})</span>
+        {unassigned.length > 0 && (() => {
+          const urgentEntries = unassigned.filter(e => e.datum <= addDays(today, 3))
+          const futureEntries = unassigned.filter(e => e.datum > addDays(today, 3))
+          const renderEntry = (e: UnassignedEntry, urgent: boolean) => (
+            <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: urgent ? '4px solid var(--rose)' : '4px solid var(--mid)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
+                {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{e.ort}</div>}
+              </div>
+              {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}
             </div>
-            {unassigned.map(e => {
-              const urgent = e.datum <= addDays(today, 3)
-              return (
-                <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: urgent ? '4px solid var(--rose)' : '4px solid var(--mid)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
-                    {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{e.ort}</div>}
+          )
+          return (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--rose)', flexShrink: 0 }} />
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Noch zu vergeben</h2>
+                <span style={{ fontSize: 13, color: 'var(--mid)' }}>({unassigned.length})</span>
+              </div>
+              {urgentEntries.length === 0 && futureEntries.length === 0
+                ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
+                : urgentEntries.map(e => renderEntry(e, true))}
+              {futureEntries.length > 0 && (
+                <>
+                  <div onClick={() => setShowFuture(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px', cursor: 'pointer', color: 'var(--mid)', fontSize: 13 }}>
+                    <span>{showFuture ? '▲' : '▼'}</span>
+                    <span>{futureEntries.length} weitere{futureEntries.length === 1 ? 'r' : ''} Termin{futureEntries.length === 1 ? '' : 'e'} (später)</span>
                   </div>
-                  {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}
-                </div>
-              )
-            })}
-          </div>
-        )}
+                  {showFuture && futureEntries.map(e => renderEntry(e, false))}
+                </>
+              )}
+            </div>
+          )
+        })()}
 
         <Section title="Aktuell" color="var(--rose)" items={laufend.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort }))} />
         <Section title="Noch offen" color="var(--mid)" items={offen.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort }))} />
-        <Section title="Abgeschlossen" color="var(--sage)" items={[
+        <Section title="Abgeschlossen" color="var(--sage)" collapsible open={showDone} onToggle={() => setShowDone(s => !s)} items={[
           ...abgeschlossen.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort })),
           ...extraAbgeschlossen.map(a => ({ id: a.id, caregiver: a.caregiver?.name || '–', client: a.client?.name || '–', zeit_von: a.zeit_von, zeit_bis: a.zeit_bis })),
         ]} />

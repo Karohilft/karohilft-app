@@ -80,6 +80,8 @@ export default function AdminEinsatzplan() {
   const [openRecurring, setOpenRecurring] = useState(false)
   const [openRecurDays, setOpenRecurDays] = useState<number[]>([])
   const [editingOpenRuleId, setEditingOpenRuleId] = useState<string | null>(null)
+  const [caregiverSearch, setCaregiverSearch] = useState('')
+  const [showFutureOpen, setShowFutureOpen] = useState(false)
 
   async function load() {
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }] = await Promise.all([
@@ -429,27 +431,40 @@ export default function AdminEinsatzplan() {
             </div>
           )}
 
-          {openEntries.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Noch zu vergeben</h2>
-              {openEntries.map(e => {
-                const urgent = e.datum <= addDays(todayStr(), 3)
-                return (
-                  <div key={e.id} onClick={() => openOpenEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: urgent ? '4px solid var(--rose)' : undefined }}>
-                    <div>
-                      <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
-                      <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
+          {openEntries.length > 0 && (() => {
+            const urgentEntries = openEntries.filter(e => e.datum <= addDays(todayStr(), 3))
+            const futureEntries = openEntries.filter(e => e.datum > addDays(todayStr(), 3))
+            const renderEntry = (e: Entry, urgent: boolean) => (
+              <div key={e.id} onClick={() => openOpenEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: urgent ? '4px solid var(--rose)' : undefined }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
+                  <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
+                </div>
+                {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}
+              </div>
+            )
+            return (
+              <div style={{ marginBottom: 20 }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Noch zu vergeben ({openEntries.length})</h2>
+                {urgentEntries.map(e => renderEntry(e, true))}
+                {futureEntries.length > 0 && (
+                  <>
+                    <div onClick={() => setShowFutureOpen(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px', cursor: 'pointer', color: 'var(--mid)', fontSize: 13 }}>
+                      <span>{showFutureOpen ? '▲' : '▼'}</span>
+                      <span>{futureEntries.length} weitere{futureEntries.length === 1 ? 'r' : ''} Termin{futureEntries.length === 1 ? '' : 'e'} (später)</span>
                     </div>
-                    {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                    {showFutureOpen && futureEntries.map(e => renderEntry(e, false))}
+                  </>
+                )}
+              </div>
+            )
+          })()}
+
+          <input placeholder="Betreuer suchen…" value={caregiverSearch} onChange={e => setCaregiverSearch(e.target.value)} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box', marginBottom: 10, background: '#fff' }} />
 
           {caregivers.length === 0
             ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer angelegt.</div>
-            : caregivers.map(c => {
+            : caregivers.filter(c => c.name.toLowerCase().includes(caregiverSearch.toLowerCase())).map(c => {
               const count = entries.filter(e => e.caregiver_id === c.id).length + rules.filter(r => r.caregiver_id === c.id).length
               return (
                 <div key={c.id} onClick={() => setSelected(c)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
