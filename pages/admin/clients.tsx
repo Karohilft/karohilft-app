@@ -149,9 +149,9 @@ export default function AdminClients() {
           {createPortal(
           <div className="print-area" data-side={printSide}>
             <div className="print-page front">
-              <div id="print-card" className="card-print front" style={{ position: 'relative', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)' }}>
+              <div id="print-card" className="card-print front" style={{ position: 'relative', background: '#fff' }}>
                 <div style={{ position: 'absolute', left: 20, top: 16 }}>
-                  <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
+                  <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 42 }} />
                 </div>
                 <div style={{ position: 'absolute', right: 20, top: 24, fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>
                   Klientenkarte
@@ -167,13 +167,13 @@ export default function AdminClients() {
               </div>
             </div>
             <div className="print-page back">
-              <div id="print-card-back" className="card-print back" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', padding: '14px 20px' }}>
+              <div id="print-card-back" className="card-print back" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: '#fff', padding: '14px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>GÜLTIG BIS {validUntil()}</span>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 4 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontStyle: 'italic', color: 'var(--rose)' }}>Verlässlich an Ihrer Seite.</span>
-                  <span style={{ fontSize: 9, color: 'var(--mid)', letterSpacing: 0.5 }}>Ihr Team von Karohilft</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontStyle: 'italic', color: 'var(--rose)' }}>Verlässlich an Ihrer Seite.</span>
+                  <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 0.5 }}>Ihr Team von Karohilft</span>
                 </div>
                 <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mid)', letterSpacing: 0.5 }}>
                   +43 677 61482115 &nbsp;·&nbsp; office@karohilft.at &nbsp;·&nbsp; www.karohilft.at
