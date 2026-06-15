@@ -172,14 +172,14 @@ export default function AdminUsers() {
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Betreuerkarte drucken</h2>
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
-                <span style={{ fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>{printCard.card_type === 'geschaeftsfuehrung' ? 'Karohilft Geschäftsführung' : 'Karohilft Betreuungsteam'}</span>
+                <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 40 }} />
+                <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>{printCard.card_type === 'geschaeftsfuehrung' ? 'Geschäftsführung' : 'Betreuungsteam'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ marginBottom: 8 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
                   {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>}
-                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(printCard.card_number)}</div>}
+                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${printCard.name}\nORG:Karohilft\nTEL:${printCard.phone || ''}\nEMAIL:${printCard.email || ''}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
@@ -208,16 +208,16 @@ export default function AdminUsers() {
           <div className="print-area" data-side={printSide}>
             <div className="print-page front">
               <div id="print-card" className="card-print front" style={{ position: 'relative', background: '#fff' }}>
-                <div style={{ position: 'absolute', left: 20, top: 16 }}>
-                  <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 42 }} />
+                <div style={{ position: 'absolute', left: 14, top: 16 }}>
+                  <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 47 }} />
                 </div>
-                <div style={{ position: 'absolute', right: 20, top: 24, fontSize: 11, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>
-                  {printCard.card_type === 'geschaeftsfuehrung' ? 'Karohilft Geschäftsführung' : 'Karohilft Betreuungsteam'}
+                <div style={{ position: 'absolute', right: 20, top: 22, fontSize: 10, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>
+                  {printCard.card_type === 'geschaeftsfuehrung' ? 'Geschäftsführung' : 'Betreuungsteam'}
                 </div>
                 <div style={{ position: 'absolute', left: 20, bottom: 28 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 500, color: 'var(--dark)' }}>{printCard.name}</div>
                   {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 4 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>}
-                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>{formatCardNumber(printCard.card_number)}</div>}
+                  {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600, marginTop: 2 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <div style={{ position: 'absolute', right: 20, bottom: 28 }}>
                   <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${printCard.name}\nORG:Karohilft\nTEL:${printCard.phone || ''}\nEMAIL:${printCard.email || ''}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
