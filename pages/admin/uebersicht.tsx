@@ -80,6 +80,7 @@ export default function AdminUebersicht() {
   const [rules, setRules] = useState<RuleEntry[]>([])
   const [unassigned, setUnassigned] = useState<UnassignedEntry[]>([])
   const [showFuture, setShowFuture] = useState(false)
+  const [showCancelled, setShowCancelled] = useState(false)
 
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
@@ -127,20 +128,40 @@ export default function AdminUebersicht() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Übersicht heute</h1>
         </div>
 
-        {unassigned.some(e => e.cancelled_by) && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#C0392B', flexShrink: 0 }} />
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Kürzlich storniert</h2>
-            </div>
-            {unassigned.filter(e => e.cancelled_by).map(e => (
-              <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #C0392B' }}>
-                <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
-                <div style={{ fontSize: 13, color: '#C0392B', marginTop: 2 }}>Storniert von {e.cancelled_by}</div>
+        {unassigned.some(e => e.cancelled_by) && (() => {
+          const cancelled = unassigned.filter(e => e.cancelled_by).sort((a, b) => (b.cancelled_at || '').localeCompare(a.cancelled_at || ''))
+          const visible = cancelled.slice(0, 3)
+          const rest = cancelled.slice(3)
+          return (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#C0392B', flexShrink: 0 }} />
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Kürzlich storniert</h2>
+                <span style={{ fontSize: 13, color: 'var(--mid)' }}>({cancelled.length})</span>
               </div>
-            ))}
-          </div>
-        )}
+              {visible.map(e => (
+                <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #C0392B' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
+                  <div style={{ fontSize: 13, color: '#C0392B', marginTop: 2 }}>Storniert von {e.cancelled_by}</div>
+                </div>
+              ))}
+              {rest.length > 0 && (
+                <>
+                  <div onClick={() => setShowCancelled(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px', cursor: 'pointer', color: 'var(--mid)', fontSize: 13 }}>
+                    <span>{showCancelled ? '▲' : '▼'}</span>
+                    <span>{rest.length} weitere Stornierung{rest.length === 1 ? '' : 'en'}</span>
+                  </div>
+                  {showCancelled && rest.map(e => (
+                    <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #C0392B' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
+                      <div style={{ fontSize: 13, color: '#C0392B', marginTop: 2 }}>Storniert von {e.cancelled_by}</div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )
+        })()}
 
         {unassigned.length > 0 && (() => {
           const urgentEntries = unassigned.filter(e => e.datum <= addDays(today, 3))
