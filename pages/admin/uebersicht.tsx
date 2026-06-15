@@ -79,7 +79,6 @@ export default function AdminUebersicht() {
   const [activities, setActivities] = useState<ActivityEntry[]>([])
   const [rules, setRules] = useState<RuleEntry[]>([])
   const [unassigned, setUnassigned] = useState<UnassignedEntry[]>([])
-  const [showDone, setShowDone] = useState(false)
   const [showFuture, setShowFuture] = useState(false)
 
   useEffect(() => {
@@ -119,28 +118,6 @@ export default function AdminUebersicht() {
   const offen = allEntries.filter(e => !isDone(e) && now < e.zeit_von)
   const abgeschlossen = allEntries.filter(e => isDone(e))
   const extraAbgeschlossen = activities.filter(a => !allEntries.some(e => e.caregiver_id === a.caregiver_id && e.client_id === a.client_id && e.zeit_von === a.zeit_von))
-
-  function Section({ title, color, items, collapsible, open, onToggle }: { title: string; color: string; items: { id: string; caregiver: string; client: string; zeit_von: string; zeit_bis: string; ort?: string | null }[]; collapsible?: boolean; open?: boolean; onToggle?: () => void }) {
-    const isOpen = !collapsible || open
-    return (
-      <div style={{ marginBottom: 20 }}>
-        <div onClick={collapsible ? onToggle : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, cursor: collapsible ? 'pointer' : 'default' }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>{title}</h2>
-          <span style={{ fontSize: 13, color: 'var(--mid)' }}>({items.length})</span>
-          {collapsible && <span style={{ color: 'var(--rose)', fontSize: 14, marginLeft: 'auto' }}>{isOpen ? '▲' : '▼'}</span>}
-        </div>
-        {!isOpen ? null : items.length === 0
-          ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
-          : items.map(e => (
-            <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${color}` }}>
-              <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.caregiver} → {e.client}</div>
-              {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{e.ort}</div>}
-            </div>
-          ))}
-      </div>
-    )
-  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
@@ -200,12 +177,33 @@ export default function AdminUebersicht() {
           )
         })()}
 
-        <Section title="Aktuell" color="var(--rose)" items={laufend.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort }))} />
-        <Section title="Noch offen" color="var(--mid)" items={offen.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort }))} />
-        <Section title="Abgeschlossen" color="var(--sage)" collapsible open={showDone} onToggle={() => setShowDone(s => !s)} items={[
-          ...abgeschlossen.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort })),
-          ...extraAbgeschlossen.map(a => ({ id: a.id, caregiver: a.caregiver?.name || '–', client: a.client?.name || '–', zeit_von: a.zeit_von, zeit_bis: a.zeit_bis })),
-        ]} />
+        {(() => {
+          const timeline = [
+            ...laufend.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort, color: 'var(--rose)' })),
+            ...offen.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort, color: 'var(--mid)' })),
+            ...abgeschlossen.map(e => ({ id: e.id, caregiver: e.caregiver?.name || '–', client: e.client?.name || '–', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort, color: 'var(--sage)' })),
+            ...extraAbgeschlossen.map(a => ({ id: a.id, caregiver: a.caregiver?.name || '–', client: a.client?.name || '–', zeit_von: a.zeit_von, zeit_bis: a.zeit_bis, ort: null as string | null, color: 'var(--sage)' })),
+          ].sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
+          return (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Heute</h2>
+                <span style={{ fontSize: 13, color: 'var(--mid)' }}>({timeline.length})</span>
+              </div>
+              {timeline.length === 0
+                ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
+                : timeline.map(e => (
+                  <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${e.color}`, opacity: e.color === 'var(--sage)' ? 0.6 : 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: e.color, flexShrink: 0 }} />
+                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.caregiver} → {e.client}</div>
+                    </div>
+                    {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2, marginLeft: 17 }}>{e.ort}</div>}
+                  </div>
+                ))}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
