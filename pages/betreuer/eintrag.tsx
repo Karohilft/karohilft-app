@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
-import TimeSelect from '../../components/TimeSelect'
+import WheelTimePicker from '../../components/WheelTimePicker'
 
 type Client = { id: string; name: string }
 
@@ -136,11 +136,11 @@ export default function BetreuerEintrag() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit von</label>
-                    <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                    <WheelTimePicker value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
                   </div>
                   <div>
                     <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit bis</label>
-                    <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                    <WheelTimePicker value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
                   </div>
                 </div>
               </>
@@ -157,11 +157,11 @@ export default function BetreuerEintrag() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit von</label>
-                    <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                    <WheelTimePicker value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
                   </div>
                   <div>
                     <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit bis</label>
-                    <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
+                    <WheelTimePicker value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ width: '100%', padding: '13px 14px', fontSize: 16, boxSizing: 'border-box' }} />
                   </div>
                 </div>
               </>
