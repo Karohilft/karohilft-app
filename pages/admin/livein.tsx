@@ -351,14 +351,15 @@ export default function AdminLiveIn() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
+      <style>{`@media print { .livein-no-print { display: none !important; } .livein-print-header { display: block !important; } body { background: white; } }`}</style>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+        <div className="livein-no-print" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
           <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0 }}>24h-Betreuung</h1>
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(28,24,20,.1)', marginBottom: 20, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } as any}>
+        <div className="livein-no-print" style={{ display: 'flex', borderBottom: '1px solid rgba(28,24,20,.1)', marginBottom: 20, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } as any}>
           {(['planung', 'einsaetze', 'klienten', 'betreuer'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 18px', border: 'none', background: 'none', fontSize: 14, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', color: tab === t ? 'var(--rose)' : 'var(--mid)', borderBottom: tab === t ? '2px solid var(--rose)' : '2px solid transparent', marginBottom: -1 }}>
               {t === 'planung' ? 'Planung' : t === 'einsaetze' ? 'Einsätze' : t === 'klienten' ? 'Klienten' : 'Betreuer'}
@@ -453,15 +454,24 @@ export default function AdminLiveIn() {
         {/* ── EINSÄTZE ── */}
         {tab === 'einsaetze' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'none' }} className="livein-print-header">
+              <div style={{ fontFamily: 'serif', fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Karohilft – 24h-Betreuung Einsätze</div>
+              <div style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
+                {billingClientFilter !== 'all' ? `Klient: ${clients.find(c => c.id === billingClientFilter)?.name}` : 'Alle Klienten'} · Druckdatum: {new Date().toLocaleDateString('de-AT')}
+              </div>
+            </div>
+            <div className="livein-no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Einsätze</h2>
-              <select value={billingClientFilter} onChange={e => { setBillingClientFilter(e.target.value); setSelectedShiftIds(new Set()) }} style={{ padding: '8px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
-                <option value="all">Alle Klienten</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select value={billingClientFilter} onChange={e => { setBillingClientFilter(e.target.value); setSelectedShiftIds(new Set()) }} style={{ padding: '8px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff', cursor: 'pointer' }}>
+                  <option value="all">Alle Klienten</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <button onClick={() => window.print()} style={{ ...btnSm, color: 'var(--rose)', borderColor: 'rgba(180,60,60,.3)', display: 'flex', alignItems: 'center', gap: 5 }}>⎙ Drucken</button>
+              </div>
             </div>
             {selectedShiftIds.size > 0 && (
-              <div style={{ background: 'rgba(180,60,60,.06)', borderRadius: 'var(--r-md)', padding: '12px 16px', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="livein-no-print" style={{ background: 'rgba(180,60,60,.06)', borderRadius: 'var(--r-md)', padding: '12px 16px', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 14, color: 'var(--rose)', fontWeight: 500 }}>{selectedShiftIds.size} ausgewählt</span>
                 <button onClick={markBilled} style={{ ...btnP, padding: '8px 18px', fontSize: 13 }}>Abgerechnet markieren</button>
               </div>
@@ -470,7 +480,7 @@ export default function AdminLiveIn() {
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)', marginBottom: 8 }}>Keine offenen Einsätze.</div>
               : filteredOpen.map(s => (
                 <div key={s.id} onClick={() => toggleShiftSelect(s.id)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', borderLeft: `4px solid ${selectedShiftIds.has(s.id) ? 'var(--rose)' : 'rgba(28,24,20,.08)'}` }}>
-                  <input type="checkbox" checked={selectedShiftIds.has(s.id)} onChange={() => toggleShiftSelect(s.id)} onClick={e => e.stopPropagation()} style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
+                  <input type="checkbox" checked={selectedShiftIds.has(s.id)} onChange={() => toggleShiftSelect(s.id)} onClick={e => e.stopPropagation()} className="livein-no-print" style={{ width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{s.client?.name || '–'}</div>
                     <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{s.caregiver?.name || 'Kein Betreuer'} · {fmtDate(s.start_date)}{s.end_date ? ` – ${fmtDate(s.end_date)}` : ' (offen)'}</div>
