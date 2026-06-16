@@ -422,14 +422,21 @@ export default function AdminEinsatzplan() {
                 {!editingOpenId && !openRecurring && (
                   <>
                     {openExtraSlots.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {openExtraSlots.map((s, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(180,60,60,.05)', border: '1px solid rgba(180,60,60,.15)', borderRadius: 'var(--r-sm)', padding: '10px 14px' }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--rose)', flexShrink: 0, minWidth: 16 }}>{i + 2}.</span>
-                            <TimeSelect value={s.zeit_von} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 0 }} />
-                            <span style={{ fontSize: 14, color: 'var(--mid)', flexShrink: 0 }}>–</span>
-                            <TimeSelect value={s.zeit_bis} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 0 }} />
-                            <button type="button" onClick={() => setOpenExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', marginLeft: 'auto', flexShrink: 0 }}>×</button>
+                          <div key={i} style={{ background: 'rgba(180,60,60,.04)', border: '1px solid rgba(180,60,60,.15)', borderRadius: 'var(--r-sm)', padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--rose)', letterSpacing: '.5px' }}>ZEITBLOCK {i + 2}</span>
+                              <button type="button" onClick={() => setOpenExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                              <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
+                                <TimeSelect value={s.zeit_von} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 4 }} />
+                              </label>
+                              <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis
+                                <TimeSelect value={s.zeit_bis} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 4 }} />
+                              </label>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -581,14 +588,21 @@ export default function AdminEinsatzplan() {
               {!editingId && !recurring && (
                 <>
                   {extraSlots.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {extraSlots.map((s, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(180,60,60,.05)', border: '1px solid rgba(180,60,60,.15)', borderRadius: 'var(--r-sm)', padding: '10px 14px' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--rose)', flexShrink: 0, minWidth: 16 }}>{i + 2}.</span>
-                          <TimeSelect value={s.zeit_von} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 0 }} />
-                          <span style={{ fontSize: 14, color: 'var(--mid)', flexShrink: 0 }}>–</span>
-                          <TimeSelect value={s.zeit_bis} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 0 }} />
-                          <button type="button" onClick={() => setExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', marginLeft: 'auto', flexShrink: 0 }}>×</button>
+                        <div key={i} style={{ background: 'rgba(180,60,60,.04)', border: '1px solid rgba(180,60,60,.15)', borderRadius: 'var(--r-sm)', padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--rose)', letterSpacing: '.5px' }}>ZEITBLOCK {i + 2}</span>
+                            <button type="button" onClick={() => setExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
+                              <TimeSelect value={s.zeit_von} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 4 }} />
+                            </label>
+                            <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis
+                              <TimeSelect value={s.zeit_bis} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 4 }} />
+                            </label>
+                          </div>
                         </div>
                       ))}
                     </div>
