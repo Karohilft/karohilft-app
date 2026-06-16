@@ -84,6 +84,9 @@ export default function AdminEinsatzplan() {
   const [editingOpenRuleId, setEditingOpenRuleId] = useState<string | null>(null)
   const [caregiverSearch, setCaregiverSearch] = useState('')
   const [showFutureOpen, setShowFutureOpen] = useState(false)
+  type ExtraSlot = { client_id: string; zeit_von: string; zeit_bis: string; ort: string }
+  const [extraSlots, setExtraSlots] = useState<ExtraSlot[]>([])
+  const [openExtraSlots, setOpenExtraSlots] = useState<ExtraSlot[]>([])
 
   async function load() {
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }] = await Promise.all([
@@ -138,6 +141,7 @@ export default function AdminEinsatzplan() {
     setOpenRecurring(false)
     setOpenRecurDays([])
     setOpenForm({ client_id: '', caregiver_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+    setOpenExtraSlots([])
     setShowOpenForm(true)
   }
 
@@ -147,6 +151,7 @@ export default function AdminEinsatzplan() {
     setOpenRecurring(false)
     setOpenRecurDays([])
     setOpenForm({ client_id: e.client_id, caregiver_id: e.caregiver_id || '', datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
+    setOpenExtraSlots([])
     setShowOpenForm(true)
   }
 
@@ -190,6 +195,11 @@ export default function AdminEinsatzplan() {
     if (openForm.caregiver_id) {
       const conflict = checkConflict(openForm.caregiver_id, openForm.datum, openForm.zeit_von, openForm.zeit_bis, editingOpenId)
       if (conflict) { alert('Überschneidung: ' + conflict); return }
+      for (const s of openExtraSlots) {
+        if (!s.zeit_von || !s.zeit_bis) continue
+        const c2 = checkConflict(openForm.caregiver_id, openForm.datum, s.zeit_von, s.zeit_bis, null)
+        if (c2) { alert('Überschneidung (Zeitblock): ' + c2); return }
+      }
     }
 
     setSavingOpen(true)
@@ -198,6 +208,15 @@ export default function AdminEinsatzplan() {
       ? await getSupabase().from('schedule').update(payload).eq('id', editingOpenId)
       : await getSupabase().from('schedule').insert(payload)
     if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
+
+    if (!editingOpenId && openExtraSlots.length > 0) {
+      const extras = openExtraSlots.filter(s => s.client_id && s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
+      if (extras.length > 0) {
+        const { error: e2 } = await getSupabase().from('schedule').insert(extras.map(s => ({ caregiver_id: openForm.caregiver_id || null, client_id: s.client_id || openForm.client_id, datum: openForm.datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+        if (e2) { alert('Fehler bei Zusatz-Zeitblöcken: ' + e2.message); setSavingOpen(false); return }
+      }
+    }
+
     setShowOpenForm(false)
     setSavingOpen(false)
     await load()
@@ -218,6 +237,7 @@ export default function AdminEinsatzplan() {
     setRecurring(false)
     setRecurDays([])
     setForm({ client_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+    setExtraSlots([])
     setShowForm(true)
   }
 
@@ -228,6 +248,7 @@ export default function AdminEinsatzplan() {
     setRecurring(false)
     setRecurDays([])
     setForm({ client_id: e.client_id, datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
+    setExtraSlots([])
     setShowForm(true)
   }
 
@@ -308,6 +329,11 @@ export default function AdminEinsatzplan() {
     if (!form.datum) return
     const conflict = checkConflict(selected.id, form.datum, form.zeit_von, form.zeit_bis, editingId)
     if (conflict) { alert('Überschneidung: ' + conflict); return }
+    for (const s of extraSlots) {
+      if (!s.zeit_von || !s.zeit_bis) continue
+      const c2 = checkConflict(selected.id, form.datum, s.zeit_von, s.zeit_bis, null)
+      if (c2) { alert('Überschneidung (Zeitblock): ' + c2); return }
+    }
 
     setSaving(true)
     const payload = { caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }
@@ -315,6 +341,15 @@ export default function AdminEinsatzplan() {
       ? await getSupabase().from('schedule').update(payload).eq('id', editingId)
       : await getSupabase().from('schedule').insert(payload)
     if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
+
+    if (!editingId && extraSlots.length > 0) {
+      const extras = extraSlots.filter(s => s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
+      if (extras.length > 0) {
+        const { error: e2 } = await getSupabase().from('schedule').insert(extras.map(s => ({ caregiver_id: selected.id, client_id: s.client_id || form.client_id, datum: form.datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+        if (e2) { alert('Fehler bei Zusatz-Zeitblöcken: ' + e2.message); setSaving(false); return }
+      }
+    }
+
     setShowForm(false)
     setSaving(false)
     await load()
@@ -383,6 +418,33 @@ export default function AdminEinsatzplan() {
                   <TimeSelect value={openForm.zeit_bis} onChange={v => setOpenForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
                 </label>
                 <input placeholder="Ort (optional)" value={openForm.ort} onChange={e => setOpenForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+
+                {!editingOpenId && !openRecurring && (
+                  <>
+                    {openExtraSlots.map((s, i) => (
+                      <div key={i} style={{ background: 'rgba(28,24,20,.03)', borderRadius: 'var(--r-sm)', padding: '12px 14px', display: 'grid', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)' }}>Zeitblock {i + 2}</span>
+                          <button type="button" onClick={() => setOpenExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                        </div>
+                        <select value={s.client_id} onChange={e => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, client_id: e.target.value } : x))} style={{ padding: '10px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
+                          <option value="">– Klient (wie oben) –</option>
+                          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          <label style={{ fontSize: 12, color: 'var(--mid)' }}>Von
+                            <TimeSelect value={s.zeit_von} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 3 }} />
+                          </label>
+                          <label style={{ fontSize: 12, color: 'var(--mid)' }}>Bis
+                            <TimeSelect value={s.zeit_bis} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 3 }} />
+                          </label>
+                        </div>
+                        <input placeholder="Ort (optional)" value={s.ort} onChange={e => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, ort: e.target.value } : x))} style={{ padding: '10px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setOpenExtraSlots(sl => [...sl, { client_id: '', zeit_von: '', zeit_bis: '', ort: '' }])} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: '1.5px dashed rgba(28,24,20,.2)', background: 'transparent', color: 'var(--mid)', fontSize: 13, cursor: 'pointer', width: '100%' }}>+ Weiterer Zeitblock am selben Tag</button>
+                  </>
+                )}
 
                 {!editingOpenId && (
                   <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
@@ -523,6 +585,33 @@ export default function AdminEinsatzplan() {
                 <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
               </label>
               <input placeholder="Ort (optional)" value={form.ort} onChange={e => setForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+
+              {!editingId && !recurring && (
+                <>
+                  {extraSlots.map((s, i) => (
+                    <div key={i} style={{ background: 'rgba(28,24,20,.03)', borderRadius: 'var(--r-sm)', padding: '12px 14px', display: 'grid', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)' }}>Zeitblock {i + 2}</span>
+                        <button type="button" onClick={() => setExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                      </div>
+                      <select value={s.client_id} onChange={e => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, client_id: e.target.value } : x))} style={{ padding: '10px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14, background: '#fff' }}>
+                        <option value="">– Klient (wie oben) –</option>
+                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <label style={{ fontSize: 12, color: 'var(--mid)' }}>Von
+                          <TimeSelect value={s.zeit_von} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 3 }} />
+                        </label>
+                        <label style={{ fontSize: 12, color: 'var(--mid)' }}>Bis
+                          <TimeSelect value={s.zeit_bis} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 3 }} />
+                        </label>
+                      </div>
+                      <input placeholder="Ort (optional)" value={s.ort} onChange={e => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, ort: e.target.value } : x))} style={{ padding: '10px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setExtraSlots(sl => [...sl, { client_id: '', zeit_von: '', zeit_bis: '', ort: '' }])} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: '1.5px dashed rgba(28,24,20,.2)', background: 'transparent', color: 'var(--mid)', fontSize: 13, cursor: 'pointer', width: '100%' }}>+ Weiterer Zeitblock am selben Tag</button>
+                </>
+              )}
 
               {!editingId && (
                 <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
