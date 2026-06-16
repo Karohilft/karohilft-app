@@ -77,7 +77,7 @@ export default function AdminEinsatzplan() {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
   const [showOpenForm, setShowOpenForm] = useState(false)
   const [editingOpenId, setEditingOpenId] = useState<string | null>(null)
-  const [openForm, setOpenForm] = useState({ client_id: '', caregiver_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+  const [openForm, setOpenForm] = useState({ client_id: '', caregiver_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
   const [savingOpen, setSavingOpen] = useState(false)
   const [openRecurring, setOpenRecurring] = useState(false)
   const [openRecurDays, setOpenRecurDays] = useState<number[]>([])
@@ -140,7 +140,7 @@ export default function AdminEinsatzplan() {
     setEditingOpenRuleId(null)
     setOpenRecurring(false)
     setOpenRecurDays([])
-    setOpenForm({ client_id: '', caregiver_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+    setOpenForm({ client_id: '', caregiver_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
     setOpenExtraSlots([])
     setShowOpenForm(true)
   }
@@ -150,7 +150,7 @@ export default function AdminEinsatzplan() {
     setEditingOpenRuleId(null)
     setOpenRecurring(false)
     setOpenRecurDays([])
-    setOpenForm({ client_id: e.client_id, caregiver_id: e.caregiver_id || '', datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
+    setOpenForm({ client_id: e.client_id, caregiver_id: e.caregiver_id || '', datum: e.datum, datum_bis: '', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
     setOpenExtraSlots([])
     setShowOpenForm(true)
   }
@@ -160,7 +160,7 @@ export default function AdminEinsatzplan() {
     setEditingOpenRuleId(r.id)
     setOpenRecurring(true)
     setOpenRecurDays(r.weekdays)
-    setOpenForm({ client_id: r.client_id, caregiver_id: r.caregiver_id || '', datum: r.start_date, zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort || '' })
+    setOpenForm({ client_id: r.client_id, caregiver_id: r.caregiver_id || '', datum: r.start_date, datum_bis: '', zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort || '' })
     setShowOpenForm(true)
   }
 
@@ -192,27 +192,48 @@ export default function AdminEinsatzplan() {
     }
 
     if (!openForm.datum) return
+
+    // Build list of dates (single day or range)
+    const openDates: string[] = []
+    if (!editingOpenId && openForm.datum_bis && openForm.datum_bis >= openForm.datum) {
+      let d = openForm.datum
+      while (d <= openForm.datum_bis) {
+        openDates.push(d)
+        d = addDays(d, 1)
+      }
+    } else {
+      openDates.push(openForm.datum)
+    }
+
     if (openForm.caregiver_id) {
-      const conflict = checkConflict(openForm.caregiver_id, openForm.datum, openForm.zeit_von, openForm.zeit_bis, editingOpenId)
-      if (conflict) { alert('Überschneidung: ' + conflict); return }
+      for (const datum of openDates) {
+        const conflict = checkConflict(openForm.caregiver_id, datum, openForm.zeit_von, openForm.zeit_bis, editingOpenId)
+        if (conflict) { alert('Überschneidung: ' + conflict); return }
+      }
       for (const s of openExtraSlots) {
         if (!s.zeit_von || !s.zeit_bis) continue
-        const c2 = checkConflict(openForm.caregiver_id, openForm.datum, s.zeit_von, s.zeit_bis, null)
-        if (c2) { alert('Überschneidung (Zeitblock): ' + c2); return }
+        for (const datum of openDates) {
+          const c2 = checkConflict(openForm.caregiver_id, datum, s.zeit_von, s.zeit_bis, null)
+          if (c2) { alert('Überschneidung (Zeitblock): ' + c2); return }
+        }
       }
     }
 
     setSavingOpen(true)
-    const payload = { caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum: openForm.datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }
-    const { error } = editingOpenId
-      ? await getSupabase().from('schedule').update(payload).eq('id', editingOpenId)
-      : await getSupabase().from('schedule').insert(payload)
-    if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
+    if (editingOpenId) {
+      const { error } = await getSupabase().from('schedule').update({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum: openForm.datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }).eq('id', editingOpenId)
+      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
+    } else {
+      const rows = openDates.map(datum => ({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }))
+      const { error } = await getSupabase().from('schedule').insert(rows)
+      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
+    }
 
     if (!editingOpenId && openExtraSlots.length > 0) {
       const extras = openExtraSlots.filter(s => s.client_id && s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
       if (extras.length > 0) {
-        const { error: e2 } = await getSupabase().from('schedule').insert(extras.map(s => ({ caregiver_id: openForm.caregiver_id || null, client_id: s.client_id || openForm.client_id, datum: openForm.datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+        const extraRows = openDates.flatMap(datum => extras.map(s => ({ caregiver_id: openForm.caregiver_id || null, client_id: s.client_id || openForm.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+        const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
         if (e2) { alert('Fehler bei Zusatz-Zeitblöcken: ' + e2.message); setSavingOpen(false); return }
       }
     }
@@ -428,9 +449,14 @@ export default function AdminEinsatzplan() {
                   {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}{c.absent ? ' (abwesend)' : ''}</option>)}
                 </select>
                 {!openRecurring && (
-                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Datum
-                    <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von-Datum *
+                      <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                    </label>
+                    <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis-Datum (opt.)
+                      <input type="date" value={openForm.datum_bis} min={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum_bis: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                    </label>
+                  </div>
                 )}
                 <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
                   <TimeSelect value={openForm.zeit_von} onChange={v => setOpenForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
