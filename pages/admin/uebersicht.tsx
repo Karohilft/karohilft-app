@@ -40,12 +40,20 @@ type RuleEntry = {
 
 type Person = { id: string; name: string }
 
-function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+function dateStr(offset: number) {
+  const d = new Date()
+  d.setDate(d.getDate() + offset)
+  return d.toISOString().slice(0, 10)
 }
 
 function weekdayOf(dateStr: string) {
   return (new Date(dateStr + 'T00:00:00').getDay() + 6) % 7
+}
+
+function fmtTabDate(offset: number) {
+  const d = new Date()
+  d.setDate(d.getDate() + offset)
+  return d.toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit' })
 }
 
 function nowTime() {
@@ -56,6 +64,7 @@ function nowTime() {
 export default function AdminUebersicht() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [selectedDay, setSelectedDay] = useState(0)
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([])
   const [activities, setActivities] = useState<ActivityEntry[]>([])
   const [rules, setRules] = useState<RuleEntry[]>([])
@@ -65,11 +74,12 @@ export default function AdminUebersicht() {
   const [editForm, setEditForm] = useState({ caregiver_id: '', client_id: '', zeit_von: '', zeit_bis: '', ort: '' })
   const [saving, setSaving] = useState(false)
 
-  async function load() {
-    const today = todayStr()
+  async function load(offset: number) {
+    setLoading(true)
+    const date = dateStr(offset)
     const [{ data: sched }, { data: acts }, { data: rls }, { data: cgs }, { data: cls }] = await Promise.all([
-      getSupabase().from('schedule').select('id,caregiver_id,client_id,zeit_von,zeit_bis,ort,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
-      getSupabase().from('activities').select('id,caregiver_id,client_id,zeit_von,zeit_bis,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
+      getSupabase().from('schedule').select('id,caregiver_id,client_id,zeit_von,zeit_bis,ort,caregiver:caregivers(name),client:clients(name)').eq('datum', date).order('zeit_von'),
+      getSupabase().from('activities').select('id,caregiver_id,client_id,zeit_von,zeit_bis,caregiver:caregivers(name),client:clients(name)').eq('datum', date).order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date,caregiver:caregivers(name),client:clients(name)'),
       getSupabase().from('caregivers').select('id,name').neq('role', 'admin').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
@@ -85,9 +95,15 @@ export default function AdminUebersicht() {
   useEffect(() => {
     getSupabase().auth.getSession().then(({ data }) => {
       if (!data.session) { router.replace('/login'); return }
-      load()
+      load(0)
     })
   }, [router])
+
+  function switchDay(offset: number) {
+    setSelectedDay(offset)
+    setEditEntry(null)
+    load(offset)
+  }
 
   async function saveEdit() {
     if (!editEntry) return
@@ -101,7 +117,7 @@ export default function AdminUebersicht() {
     }).eq('id', editEntry.id)
     setSaving(false)
     setEditEntry(null)
-    await load()
+    await load(selectedDay)
   }
 
   async function delEntry() {
@@ -109,56 +125,84 @@ export default function AdminUebersicht() {
     if (!confirm('Einsatz löschen?')) return
     await getSupabase().from('schedule').delete().eq('id', editEntry.id)
     setEditEntry(null)
-    await load()
+    await load(selectedDay)
   }
 
   async function openEdit(e: ScheduleEntry) {
     let entry = e
     if (e.id.startsWith('rule-')) {
-      // Materialize the rule as a one-time schedule entry for today
-      const today = todayStr()
+      const date = dateStr(selectedDay)
       const { data, error } = await getSupabase().from('schedule').insert({
         caregiver_id: e.caregiver_id,
         client_id: e.client_id,
-        datum: today,
+        datum: date,
         zeit_von: e.zeit_von,
         zeit_bis: e.zeit_bis,
         ort: e.ort,
       }).select('id,caregiver_id,client_id,zeit_von,zeit_bis,ort,caregiver:caregivers(name),client:clients(name)').single()
       if (error || !data) { alert('Fehler: ' + (error?.message || 'Unbekannt')); return }
       entry = data as any
-      await load()
+      await load(selectedDay)
     }
     setEditEntry(entry)
     setEditForm({ caregiver_id: entry.caregiver_id || '', client_id: entry.client_id || '', zeit_von: entry.zeit_von, zeit_bis: entry.zeit_bis, ort: entry.ort || '' })
   }
 
-  if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
+  const TABS = [
+    { offset: 0, label: 'Heute' },
+    { offset: 1, label: 'Morgen' },
+    { offset: 2, label: 'Übermorgen' },
+  ]
 
   const now = nowTime()
+  const isToday = selectedDay === 0
+  const date = dateStr(selectedDay)
+  const weekday = weekdayOf(date)
+
+  const ruleEntries: ScheduleEntry[] = rules
+    .filter(r => r.start_date <= date && r.weekdays.includes(weekday))
+    .map(r => ({ id: 'rule-' + r.id, caregiver_id: r.caregiver_id, client_id: r.client_id, zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort, caregiver: r.caregiver, client: r.client }))
+  const allEntries = [...schedule, ...ruleEntries].sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
 
   function isDone(e: ScheduleEntry) {
     return activities.some(a => a.caregiver_id === e.caregiver_id && a.client_id === e.client_id && a.zeit_von === e.zeit_von)
   }
 
-  const today = todayStr()
-  const todaysWeekday = weekdayOf(today)
-  const ruleEntries: ScheduleEntry[] = rules
-    .filter(r => r.start_date <= today && r.weekdays.includes(todaysWeekday))
-    .map(r => ({ id: 'rule-' + r.id, caregiver_id: r.caregiver_id, client_id: r.client_id, zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort, caregiver: r.caregiver, client: r.client }))
-  const allEntries = [...schedule, ...ruleEntries].sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
-
-  const laufend = allEntries.filter(e => !isDone(e) && e.zeit_von <= now && now < e.zeit_bis)
-  const offen = allEntries.filter(e => !isDone(e) && now < e.zeit_von)
+  const laufend = isToday ? allEntries.filter(e => !isDone(e) && e.zeit_von <= now && now < e.zeit_bis) : []
+  const offen = allEntries.filter(e => !isDone(e) && (isToday ? now < e.zeit_von : true) && (isToday ? true : !laufend.includes(e)))
   const abgeschlossen = allEntries.filter(e => isDone(e))
   const extraAbgeschlossen = activities.filter(a => !allEntries.some(e => e.caregiver_id === a.caregiver_id && e.client_id === a.client_id && e.zeit_von === a.zeit_von))
+
+  const timeline = [
+    ...(isToday ? laufend.map(e => ({ entry: e, color: 'var(--rose)' })) : []),
+    ...offen.map(e => ({ entry: e, color: isToday ? 'var(--mid)' : 'var(--dark)' })),
+    ...abgeschlossen.map(e => ({ entry: e, color: 'var(--sage)' })),
+    ...extraAbgeschlossen.map(a => ({ entry: { id: a.id, caregiver_id: a.caregiver_id || '', client_id: a.client_id || '', zeit_von: a.zeit_von, zeit_bis: a.zeit_bis, ort: null as string | null, caregiver: a.caregiver, client: a.client } as ScheduleEntry, color: 'var(--sage)' })),
+  ].sort((a, b) => a.entry.zeit_von.localeCompare(b.entry.zeit_von))
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
           <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Übersicht heute</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Übersicht</h1>
+        </div>
+
+        {/* Tab bar */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {TABS.map(t => (
+            <button key={t.offset} onClick={() => switchDay(t.offset)} style={{
+              flex: 1, minWidth: 90, padding: '10px 12px', borderRadius: 'var(--r-md)',
+              border: selectedDay === t.offset ? 'none' : '1.5px solid rgba(28,24,20,.1)',
+              background: selectedDay === t.offset ? 'linear-gradient(145deg, var(--rose), var(--rose-dark))' : '#fff',
+              color: selectedDay === t.offset ? '#fff' : 'var(--mid)',
+              cursor: 'pointer', boxShadow: selectedDay === t.offset ? '0 4px 16px var(--rose-glow)' : 'var(--shadow-sm)',
+              transition: 'all .2s',
+            }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{t.label}</div>
+              <div style={{ fontSize: 11, opacity: .8, marginTop: 2 }}>{fmtTabDate(t.offset)}</div>
+            </button>
+          ))}
         </div>
 
         {/* Edit modal */}
@@ -196,40 +240,28 @@ export default function AdminUebersicht() {
           </div>
         )}
 
-        {(() => {
-          const timeline = [
-            ...laufend.map(e => ({ entry: e, color: 'var(--rose)' })),
-            ...offen.map(e => ({ entry: e, color: 'var(--mid)' })),
-            ...abgeschlossen.map(e => ({ entry: e, color: 'var(--sage)' })),
-            ...extraAbgeschlossen.map(a => ({ entry: { id: a.id, caregiver_id: a.caregiver_id || '', client_id: a.client_id || '', zeit_von: a.zeit_von, zeit_bis: a.zeit_bis, ort: null as string | null, caregiver: a.caregiver, client: a.client } as ScheduleEntry, color: 'var(--sage)' })),
-          ].sort((a, b) => a.entry.zeit_von.localeCompare(b.entry.zeit_von))
-          return (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Heute</h2>
-                <span style={{ fontSize: 13, color: 'var(--mid)' }}>({timeline.length})</span>
-              </div>
-              {timeline.length === 0
-                ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
-                : timeline.map(({ entry: e, color }) => {
-                  const isActivity = extraAbgeschlossen.some(a => a.id === e.id)
-                  const editable = !isActivity
-                  return (
-                    <div key={e.id} onClick={() => editable ? openEdit(e) : undefined} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${color}`, opacity: color === 'var(--sage)' ? 0.6 : 1, cursor: editable ? 'pointer' : 'default' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                          <span style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                          <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.caregiver?.name || '–'} → {e.client?.name || '–'}</div>
-                        </div>
-                        {editable && <span style={{ fontSize: 12, color: 'var(--mid)', flexShrink: 0 }}>✎</span>}
-                      </div>
-                      {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2, marginLeft: 17 }}>{e.ort}</div>}
+        {loading
+          ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--mid)' }}>Lädt…</div>
+          : timeline.length === 0
+            ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '20px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)', textAlign: 'center' }}>Keine Einsätze an diesem Tag.</div>
+            : timeline.map(({ entry: e, color }) => {
+              const isActivity = extraAbgeschlossen.some(a => a.id === e.id)
+              const editable = !isActivity
+              return (
+                <div key={e.id} onClick={() => editable ? openEdit(e) : undefined}
+                  style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${color}`, opacity: color === 'var(--sage)' ? 0.65 : 1, cursor: editable ? 'pointer' : 'default' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.caregiver?.name || '–'} → {e.client?.name || '–'}</div>
                     </div>
-                  )
-                })}
-            </div>
-          )
-        })()}
+                    {editable && <span style={{ fontSize: 12, color: 'var(--mid)', flexShrink: 0 }}>✎</span>}
+                  </div>
+                  {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2, marginLeft: 17 }}>{e.ort}</div>}
+                </div>
+              )
+            })
+        }
       </div>
     </div>
   )

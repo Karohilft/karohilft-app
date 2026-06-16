@@ -36,8 +36,8 @@ export default function AdminDashboard() {
         <div style={{ display: 'grid', gap: 12 }}>
           {[{
             href: '/admin/uebersicht',
-            title: 'Übersicht heute',
-            desc: 'Laufende, offene & abgeschlossene Einsätze des heutigen Tages'
+            title: 'Übersicht',
+            desc: 'Laufende, offene & abgeschlossene Einsätze der nächsten drei Tage'
           }, {
             href: '/admin/einsatzplan',
             title: 'Einsatzplanung',
