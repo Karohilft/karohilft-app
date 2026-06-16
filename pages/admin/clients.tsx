@@ -9,6 +9,16 @@ import { hm } from '../../lib/time'
 type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null }
 type AbrActivity = { id: string; datum: string; zeit_von: string; zeit_bis: string; caregiver: { name: string } | null }
 
+function pickFile(onFile: (f: File) => void) {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.onchange = () => { if (input.files?.[0]) onFile(input.files[0]) }
+  input.click()
+}
+
+const DOC_BUCKET = 'live-in-docs'
+const DOC_FOLDER = 'stunden-clients'
+
 function validUntil() {
   const d = new Date()
   d.setFullYear(d.getFullYear() + 1)
@@ -34,6 +44,8 @@ export default function AdminClients() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [abrechnung, setAbrechnung] = useState(false)
   const [showBilled, setShowBilled] = useState(false)
+  const [docFiles, setDocFiles] = useState<{ name: string; path: string }[]>([])
+  const [uploadingDoc, setUploadingDoc] = useState(false)
 
   async function load() {
     const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number').order('name')
@@ -87,14 +99,40 @@ export default function AdminClients() {
     setSelectedIds(new Set())
   }
 
+  async function loadDocFiles(clientId: string) {
+    const { data } = await getSupabase().storage.from(DOC_BUCKET).list(`${DOC_FOLDER}/${clientId}`)
+    setDocFiles((data || []).map(f => ({ name: f.name, path: `${DOC_FOLDER}/${clientId}/${f.name}` })))
+  }
+
+  async function uploadDocFile(clientId: string, file: File) {
+    setUploadingDoc(true)
+    const path = `${DOC_FOLDER}/${clientId}/${Date.now()}_${file.name}`
+    const { error } = await getSupabase().storage.from(DOC_BUCKET).upload(path, file)
+    if (error) alert('Upload fehlgeschlagen: ' + error.message)
+    else await loadDocFiles(clientId)
+    setUploadingDoc(false)
+  }
+
+  async function deleteDocFile(path: string, clientId: string) {
+    if (!confirm('Datei löschen?')) return
+    await getSupabase().storage.from(DOC_BUCKET).remove([path])
+    await loadDocFiles(clientId)
+  }
+
+  function getDocUrl(path: string) {
+    return getSupabase().storage.from(DOC_BUCKET).getPublicUrl(path).data.publicUrl
+  }
+
   function toggleClient(id: string) {
     if (openClientId === id) {
       setOpenClientId(null)
+      setDocFiles([])
     } else {
       setOpenClientId(id)
       setClientTab('daten')
       setClientActivities([])
       setSelectedIds(new Set())
+      loadDocFiles(id)
     }
   }
 
@@ -294,10 +332,26 @@ export default function AdminClients() {
                     </div>
 
                     {clientTab === 'daten' && (
-                      <div style={{ padding: '14px 18px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <button onClick={e => { e.stopPropagation(); edit(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
-                        <button onClick={e => { e.stopPropagation(); setPrintCard(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte drucken</button>
-                        <button onClick={e => { e.stopPropagation(); del(c.id) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid #fcc', background: '#fff', color: '#C0392B', fontSize: 13, cursor: 'pointer' }}>Löschen</button>
+                      <div style={{ padding: '14px 18px' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                          <button onClick={e => { e.stopPropagation(); edit(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
+                          <button onClick={e => { e.stopPropagation(); setPrintCard(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte drucken</button>
+                          <button onClick={e => { e.stopPropagation(); del(c.id) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid #fcc', background: '#fff', color: '#C0392B', fontSize: 13, cursor: 'pointer' }}>Löschen</button>
+                        </div>
+                        <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
+                          <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8, fontWeight: 500 }}>Dokumente</div>
+                          {docFiles.length === 0 && <div style={{ fontSize: 13, color: 'var(--mid)', fontStyle: 'italic', marginBottom: 8 }}>Keine Dokumente hochgeladen.</div>}
+                          {docFiles.map(f => (
+                            <div key={f.path} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '6px 10px', background: 'var(--cream)', borderRadius: 'var(--r-sm)' }}>
+                              <span style={{ fontSize: 15 }}>📄</span>
+                              <a href={getDocUrl(f.path)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ flex: 1, fontSize: 13, color: 'var(--rose)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name.replace(/^\d+_/, '')}</a>
+                              <button onClick={e => { e.stopPropagation(); deleteDocFile(f.path, c.id) }} style={{ fontSize: 12, color: '#c45a5a', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: '2px 6px' }}>✕</button>
+                            </div>
+                          ))}
+                          <button onClick={e => { e.stopPropagation(); pickFile(file => uploadDocFile(c.id, file)) }} disabled={uploadingDoc} style={{ marginTop: 4, padding: '8px 16px', borderRadius: 'var(--r-sm)', border: '1.5px dashed rgba(28,24,20,.2)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: uploadingDoc ? 'default' : 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            ⬆ {uploadingDoc ? 'Hochladen…' : 'Datei hochladen'}
+                          </button>
+                        </div>
                       </div>
                     )}
 
