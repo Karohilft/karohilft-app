@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 
@@ -26,6 +26,44 @@ function diffDays(from: string, to: string) {
 
 const BUCKET = 'live-in-docs'
 
+function pickFile(onFile: (f: File) => void) {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.onchange = () => { if (input.files?.[0]) onFile(input.files[0]) }
+  input.click()
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+        padding: '10px 16px', borderRadius: 'var(--r-sm)', fontSize: 14,
+        border: checked ? '1.5px solid var(--rose)' : '1.5px solid rgba(28,24,20,.15)',
+        background: checked ? 'rgba(180,60,60,.07)' : '#fff',
+        color: checked ? 'var(--rose)' : 'var(--mid)',
+        fontWeight: checked ? 600 : 400, transition: 'all .15s',
+        userSelect: 'none', flexShrink: 0,
+      }}
+    >
+      <span style={{
+        width: 36, height: 20, borderRadius: 10, flexShrink: 0,
+        background: checked ? 'var(--rose)' : 'rgba(28,24,20,.15)',
+        position: 'relative', transition: 'background .15s', display: 'inline-block',
+      }}>
+        <span style={{
+          position: 'absolute', top: 3, left: checked ? 19 : 3,
+          width: 14, height: 14, borderRadius: '50%', background: '#fff',
+          transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+        }} />
+      </span>
+      {label}
+    </button>
+  )
+}
+
 export default function AdminLiveIn() {
   const router = useRouter()
   const [tab, setTab] = useState<'planung' | 'einsaetze' | 'klienten' | 'betreuer'>('planung')
@@ -47,7 +85,6 @@ export default function AdminLiveIn() {
   const [savingClient, setSavingClient] = useState(false)
   const [clientFiles, setClientFiles] = useState<{ name: string; path: string }[]>([])
   const [uploadingClient, setUploadingClient] = useState(false)
-  const clientFileRef = useRef<HTMLInputElement>(null)
 
   // Caregiver
   const [showNewCaregiverForm, setShowNewCaregiverForm] = useState(false)
@@ -56,7 +93,6 @@ export default function AdminLiveIn() {
   const [savingCaregiver, setSavingCaregiver] = useState(false)
   const [caregiverFiles, setCaregiverFiles] = useState<{ name: string; path: string }[]>([])
   const [uploadingCaregiver, setUploadingCaregiver] = useState(false)
-  const caregiverFileRef = useRef<HTMLInputElement>(null)
 
   // Einsätze billing
   const [selectedShiftIds, setSelectedShiftIds] = useState<Set<string>>(new Set())
@@ -223,13 +259,93 @@ export default function AdminLiveIn() {
   const inp: React.CSSProperties = { padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff', width: '100%', boxSizing: 'border-box' }
   const btnP: React.CSSProperties = { padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', fontSize: 14 }
   const btnS: React.CSSProperties = { padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer', fontSize: 14 }
-  const btnSm: React.CSSProperties = { padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }
-  const chkRow: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: 'var(--dark)', cursor: 'pointer', userSelect: 'none' }
+  const btnSm: React.CSSProperties = { padding: '7px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }
 
   const openShifts = shifts.filter(s => !s.abgerechnet)
   const billedShifts = shifts.filter(s => s.abgerechnet)
   const filteredOpen = billingClientFilter === 'all' ? openShifts : openShifts.filter(s => s.client_id === billingClientFilter)
   const filteredBilled = billingClientFilter === 'all' ? billedShifts : billedShifts.filter(s => s.client_id === billingClientFilter)
+
+  function FileSection({ files, uploading, onUpload, onDelete }: { files: { name: string; path: string }[]; uploading: boolean; onUpload: (f: File) => void; onDelete: (path: string) => void }) {
+    return (
+      <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12, marginTop: 4 }}>
+        <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8, fontWeight: 500 }}>Dokumente</div>
+        {files.length === 0 && <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8, fontStyle: 'italic' }}>Keine Dokumente hochgeladen.</div>}
+        {files.map(f => (
+          <div key={f.path} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '6px 10px', background: 'var(--cream)', borderRadius: 'var(--r-sm)' }}>
+            <span style={{ fontSize: 16 }}>📄</span>
+            <a href={getPublicUrl(f.path)} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, color: 'var(--rose)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name.replace(/^\d+_/, '')}</a>
+            <button onClick={() => onDelete(f.path)} style={{ fontSize: 12, color: '#c45a5a', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: '2px 6px' }}>✕</button>
+          </div>
+        ))}
+        <button
+          onClick={() => pickFile(onUpload)}
+          disabled={uploading}
+          style={{ marginTop: 4, padding: '8px 16px', borderRadius: 'var(--r-sm)', border: '1.5px dashed rgba(28,24,20,.2)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: uploading ? 'default' : 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+        >
+          <span style={{ fontSize: 16 }}>⬆</span>{uploading ? 'Hochladen…' : 'Datei hochladen'}
+        </button>
+      </div>
+    )
+  }
+
+  function ClientFormFields({ editingId }: { editingId: string | null }) {
+    return (
+      <>
+        <input placeholder="Name *" value={clientForm.name} onChange={e => setClientForm(f => ({ ...f, name: e.target.value }))} style={inp} />
+        <input placeholder="Straße" value={clientForm.street} onChange={e => setClientForm(f => ({ ...f, street: e.target.value }))} style={inp} />
+        <input placeholder="Ort" value={clientForm.city} onChange={e => setClientForm(f => ({ ...f, city: e.target.value }))} style={inp} />
+        <textarea placeholder="Notizen" value={clientForm.notes} onChange={e => setClientForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8 }}>Eigenschaften</div>
+          <Toggle label="🐾 Haustier vorhanden" checked={clientForm.haustier} onChange={v => setClientForm(f => ({ ...f, haustier: v }))} />
+        </div>
+        {editingId && (
+          <FileSection
+            files={clientFiles}
+            uploading={uploadingClient}
+            onUpload={file => uploadClientFile(editingId, file)}
+            onDelete={path => deleteClientFile(path, editingId)}
+          />
+        )}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
+          <button onClick={() => { setShowNewClientForm(false); setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false }) }} style={btnS}>Abbrechen</button>
+          <button onClick={() => saveClient(editingId)} disabled={savingClient || !clientForm.name} style={{ ...btnP, opacity: savingClient || !clientForm.name ? 0.6 : 1 }}>{savingClient ? 'Speichern…' : 'Speichern'}</button>
+        </div>
+      </>
+    )
+  }
+
+  function CaregiverFormFields({ editingId }: { editingId: string | null }) {
+    return (
+      <>
+        <input placeholder="Name *" value={caregiverForm.name} onChange={e => setCaregiverForm(f => ({ ...f, name: e.target.value }))} style={inp} />
+        <input placeholder="Straße" value={caregiverForm.street} onChange={e => setCaregiverForm(f => ({ ...f, street: e.target.value }))} style={inp} />
+        <input placeholder="Ort" value={caregiverForm.city} onChange={e => setCaregiverForm(f => ({ ...f, city: e.target.value }))} style={inp} />
+        <input placeholder="Sprache(n)" value={caregiverForm.sprache} onChange={e => setCaregiverForm(f => ({ ...f, sprache: e.target.value }))} style={inp} />
+        <textarea placeholder="Notizen" value={caregiverForm.notes} onChange={e => setCaregiverForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8 }}>Eigenschaften</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <Toggle label="🚗 Führerschein" checked={caregiverForm.fuehrerschein} onChange={v => setCaregiverForm(f => ({ ...f, fuehrerschein: v }))} />
+            <Toggle label="🚬 Raucher" checked={caregiverForm.raucher} onChange={v => setCaregiverForm(f => ({ ...f, raucher: v }))} />
+          </div>
+        </div>
+        {editingId && (
+          <FileSection
+            files={caregiverFiles}
+            uploading={uploadingCaregiver}
+            onUpload={file => uploadCaregiverFile(editingId, file)}
+            onDelete={path => deleteCaregiverFile(path, editingId)}
+          />
+        )}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
+          <button onClick={() => { setShowNewCaregiverForm(false); setExpandedCaregiverId(null); setCaregiverForm({ name: '', street: '', city: '', notes: '', sprache: '', fuehrerschein: false, raucher: false }) }} style={btnS}>Abbrechen</button>
+          <button onClick={() => saveCaregiver(editingId)} disabled={savingCaregiver || !caregiverForm.name} style={{ ...btnP, opacity: savingCaregiver || !caregiverForm.name ? 0.6 : 1 }}>{savingCaregiver ? 'Speichern…' : 'Speichern'}</button>
+        </div>
+      </>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
@@ -295,7 +411,7 @@ export default function AdminLiveIn() {
                     <div style={{ padding: '14px 18px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, fontSize: 16, color: 'var(--dark)' }}>{c.name}</span>
                             {c.haustier && <span style={{ fontSize: 12, background: 'rgba(28,24,20,.07)', borderRadius: 'var(--r-pill)', padding: '2px 8px', color: 'var(--mid)' }}>🐾 Haustier</span>}
                           </div>
@@ -387,70 +503,29 @@ export default function AdminLiveIn() {
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>24h-Klienten</h2>
               <button onClick={() => { setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false }); setClientFiles([]); setShowNewClientForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
             </div>
-
             {showNewClientForm && (
-              <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: '0 0 14px' }}>Neuer Klient</h3>
-                <div style={{ display: 'grid', gap: 10 }}>
-                  <input placeholder="Name *" value={clientForm.name} onChange={e => setClientForm(f => ({ ...f, name: e.target.value }))} style={inp} />
-                  <input placeholder="Straße" value={clientForm.street} onChange={e => setClientForm(f => ({ ...f, street: e.target.value }))} style={inp} />
-                  <input placeholder="Ort" value={clientForm.city} onChange={e => setClientForm(f => ({ ...f, city: e.target.value }))} style={inp} />
-                  <textarea placeholder="Notizen" value={clientForm.notes} onChange={e => setClientForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
-                  <label style={chkRow}>
-                    <input type="checkbox" checked={clientForm.haustier} onChange={e => setClientForm(f => ({ ...f, haustier: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                    Haustier vorhanden
-                  </label>
-                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-                    <button onClick={() => { setShowNewClientForm(false); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false }) }} style={btnS}>Abbrechen</button>
-                    <button onClick={() => saveClient(null)} disabled={savingClient || !clientForm.name} style={{ ...btnP, opacity: savingClient || !clientForm.name ? 0.6 : 1 }}>{savingClient ? 'Speichern…' : 'Speichern'}</button>
-                  </div>
-                </div>
+              <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)', display: 'grid', gap: 10 }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: '0 0 4px' }}>Neuer Klient</h3>
+                <ClientFormFields editingId={null} />
               </div>
             )}
-
             {clients.length === 0
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Klienten.</div>
               : clients.map(c => (
                 <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
                   <div onClick={() => openClientExpand(c)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
-                        {c.haustier && <span style={{ fontSize: 12, background: 'rgba(28,24,20,.07)', borderRadius: 'var(--r-pill)', padding: '2px 8px', color: 'var(--mid)' }}>🐾 Haustier</span>}
+                        {c.haustier && <span style={{ fontSize: 12, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>🐾 Haustier</span>}
                       </div>
                       {(c.street || c.city) && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.city].filter(Boolean).join(', ')}</div>}
                     </div>
                     <span style={{ color: 'var(--mid)', fontSize: 14 }}>{expandedClientId === c.id ? '▲' : '▼'}</span>
                   </div>
                   {expandedClientId === c.id && (
-                    <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)' }}>
-                      <div style={{ paddingTop: 14, display: 'grid', gap: 10 }}>
-                        <input placeholder="Name *" value={clientForm.name} onChange={e => setClientForm(f => ({ ...f, name: e.target.value }))} style={inp} />
-                        <input placeholder="Straße" value={clientForm.street} onChange={e => setClientForm(f => ({ ...f, street: e.target.value }))} style={inp} />
-                        <input placeholder="Ort" value={clientForm.city} onChange={e => setClientForm(f => ({ ...f, city: e.target.value }))} style={inp} />
-                        <textarea placeholder="Notizen" value={clientForm.notes} onChange={e => setClientForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
-                        <label style={chkRow}>
-                          <input type="checkbox" checked={clientForm.haustier} onChange={e => setClientForm(f => ({ ...f, haustier: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                          Haustier vorhanden
-                        </label>
-
-                        <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
-                          <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8, fontWeight: 500 }}>Dokumente</div>
-                          {clientFiles.map(f => (
-                            <div key={f.path} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                              <a href={getPublicUrl(f.path)} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, color: 'var(--rose)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name.replace(/^\d+_/, '')}</a>
-                              <button onClick={() => deleteClientFile(f.path, c.id)} style={{ fontSize: 12, color: '#c45a5a', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: '2px 6px' }}>✕</button>
-                            </div>
-                          ))}
-                          <input ref={clientFileRef} type="file" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) uploadClientFile(c.id, e.target.files[0]); e.target.value = '' }} />
-                          <button onClick={() => clientFileRef.current?.click()} disabled={uploadingClient} style={{ ...btnSm, fontSize: 12, borderStyle: 'dashed', color: 'var(--mid)', marginTop: 4 }}>{uploadingClient ? 'Hochladen…' : '+ Datei hochladen'}</button>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-                          <button onClick={() => setExpandedClientId(null)} style={btnS}>Abbrechen</button>
-                          <button onClick={() => saveClient(c.id)} disabled={savingClient || !clientForm.name} style={{ ...btnP, opacity: savingClient || !clientForm.name ? 0.6 : 1 }}>{savingClient ? 'Speichern…' : 'Speichern'}</button>
-                        </div>
-                      </div>
+                    <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
+                      <ClientFormFields editingId={c.id} />
                     </div>
                   )}
                 </div>
@@ -465,34 +540,12 @@ export default function AdminLiveIn() {
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>24h-Betreuer</h2>
               <button onClick={() => { setExpandedCaregiverId(null); setCaregiverForm({ name: '', street: '', city: '', notes: '', sprache: '', fuehrerschein: false, raucher: false }); setCaregiverFiles([]); setShowNewCaregiverForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
             </div>
-
             {showNewCaregiverForm && (
-              <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: '0 0 14px' }}>Neuer Betreuer</h3>
-                <div style={{ display: 'grid', gap: 10 }}>
-                  <input placeholder="Name *" value={caregiverForm.name} onChange={e => setCaregiverForm(f => ({ ...f, name: e.target.value }))} style={inp} />
-                  <input placeholder="Straße" value={caregiverForm.street} onChange={e => setCaregiverForm(f => ({ ...f, street: e.target.value }))} style={inp} />
-                  <input placeholder="Ort" value={caregiverForm.city} onChange={e => setCaregiverForm(f => ({ ...f, city: e.target.value }))} style={inp} />
-                  <input placeholder="Sprache(n)" value={caregiverForm.sprache} onChange={e => setCaregiverForm(f => ({ ...f, sprache: e.target.value }))} style={inp} />
-                  <textarea placeholder="Notizen" value={caregiverForm.notes} onChange={e => setCaregiverForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
-                  <div style={{ display: 'flex', gap: 24 }}>
-                    <label style={chkRow}>
-                      <input type="checkbox" checked={caregiverForm.fuehrerschein} onChange={e => setCaregiverForm(f => ({ ...f, fuehrerschein: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                      Führerschein
-                    </label>
-                    <label style={chkRow}>
-                      <input type="checkbox" checked={caregiverForm.raucher} onChange={e => setCaregiverForm(f => ({ ...f, raucher: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                      Raucher
-                    </label>
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-                    <button onClick={() => { setShowNewCaregiverForm(false); setCaregiverForm({ name: '', street: '', city: '', notes: '', sprache: '', fuehrerschein: false, raucher: false }) }} style={btnS}>Abbrechen</button>
-                    <button onClick={() => saveCaregiver(null)} disabled={savingCaregiver || !caregiverForm.name} style={{ ...btnP, opacity: savingCaregiver || !caregiverForm.name ? 0.6 : 1 }}>{savingCaregiver ? 'Speichern…' : 'Speichern'}</button>
-                  </div>
-                </div>
+              <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)', display: 'grid', gap: 10 }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: '0 0 4px' }}>Neuer Betreuer</h3>
+                <CaregiverFormFields editingId={null} />
               </div>
             )}
-
             {caregivers.length === 0
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Betreuer.</div>
               : caregivers.map(c => {
@@ -505,7 +558,7 @@ export default function AdminLiveIn() {
                           <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
                           {c.sprache && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>{c.sprache}</span>}
                           {c.fuehrerschein && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>🚗 Führerschein</span>}
-                          {c.raucher && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Raucher</span>}
+                          {c.raucher && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>🚬 Raucher</span>}
                         </div>
                         <div style={{ fontSize: 13, color: cur ? 'var(--sage)' : 'var(--mid)', marginTop: 3 }}>
                           {cur ? `Aktuell bei: ${cur.client?.name || '–'}${cur.end_date ? ` (bis ${fmtDate(cur.end_date)})` : ''}` : 'Aktuell frei'}
@@ -514,41 +567,8 @@ export default function AdminLiveIn() {
                       <span style={{ color: 'var(--mid)', fontSize: 14, flexShrink: 0, marginLeft: 10 }}>{expandedCaregiverId === c.id ? '▲' : '▼'}</span>
                     </div>
                     {expandedCaregiverId === c.id && (
-                      <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)' }}>
-                        <div style={{ paddingTop: 14, display: 'grid', gap: 10 }}>
-                          <input placeholder="Name *" value={caregiverForm.name} onChange={e => setCaregiverForm(f => ({ ...f, name: e.target.value }))} style={inp} />
-                          <input placeholder="Straße" value={caregiverForm.street} onChange={e => setCaregiverForm(f => ({ ...f, street: e.target.value }))} style={inp} />
-                          <input placeholder="Ort" value={caregiverForm.city} onChange={e => setCaregiverForm(f => ({ ...f, city: e.target.value }))} style={inp} />
-                          <input placeholder="Sprache(n)" value={caregiverForm.sprache} onChange={e => setCaregiverForm(f => ({ ...f, sprache: e.target.value }))} style={inp} />
-                          <textarea placeholder="Notizen" value={caregiverForm.notes} onChange={e => setCaregiverForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
-                          <div style={{ display: 'flex', gap: 24 }}>
-                            <label style={chkRow}>
-                              <input type="checkbox" checked={caregiverForm.fuehrerschein} onChange={e => setCaregiverForm(f => ({ ...f, fuehrerschein: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                              Führerschein
-                            </label>
-                            <label style={chkRow}>
-                              <input type="checkbox" checked={caregiverForm.raucher} onChange={e => setCaregiverForm(f => ({ ...f, raucher: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer' }} />
-                              Raucher
-                            </label>
-                          </div>
-
-                          <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
-                            <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8, fontWeight: 500 }}>Dokumente</div>
-                            {caregiverFiles.map(f => (
-                              <div key={f.path} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                <a href={getPublicUrl(f.path)} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, color: 'var(--rose)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name.replace(/^\d+_/, '')}</a>
-                                <button onClick={() => deleteCaregiverFile(f.path, c.id)} style={{ fontSize: 12, color: '#c45a5a', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: '2px 6px' }}>✕</button>
-                              </div>
-                            ))}
-                            <input ref={caregiverFileRef} type="file" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) uploadCaregiverFile(c.id, e.target.files[0]); e.target.value = '' }} />
-                            <button onClick={() => caregiverFileRef.current?.click()} disabled={uploadingCaregiver} style={{ ...btnSm, fontSize: 12, borderStyle: 'dashed', color: 'var(--mid)', marginTop: 4 }}>{uploadingCaregiver ? 'Hochladen…' : '+ Datei hochladen'}</button>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-                            <button onClick={() => setExpandedCaregiverId(null)} style={btnS}>Abbrechen</button>
-                            <button onClick={() => saveCaregiver(c.id)} disabled={savingCaregiver || !caregiverForm.name} style={{ ...btnP, opacity: savingCaregiver || !caregiverForm.name ? 0.6 : 1 }}>{savingCaregiver ? 'Speichern…' : 'Speichern'}</button>
-                          </div>
-                        </div>
+                      <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
+                        <CaregiverFormFields editingId={c.id} />
                       </div>
                     )}
                   </div>
