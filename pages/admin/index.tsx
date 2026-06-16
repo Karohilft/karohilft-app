@@ -36,16 +36,16 @@ export default function AdminDashboard() {
         <div style={{ display: 'grid', gap: 12 }}>
           {[{
             href: '/admin/uebersicht',
-            title: 'Übersicht',
-            desc: 'Aktuelle, offene & abgeschlossene Einsätze heute'
+            title: 'Übersicht heute',
+            desc: 'Laufende, offene & abgeschlossene Einsätze des heutigen Tages'
           }, {
             href: '/admin/einsatzplan',
             title: 'Einsatzplanung',
-            desc: 'Betreuer Klienten zuteilen, Überschneidungen vermeiden'
+            desc: 'Zukünftige Einsätze planen & Betreuer einteilen'
           }, {
             href: '/admin/plan-stunden',
-            title: 'Stundenplan',
-            desc: 'Stundeneinsätze verwalten & abrechnen'
+            title: 'Tätigkeitsnachweise',
+            desc: 'Bereits durchgeführte Einsätze einsehen & bearbeiten'
           }, {
             href: '/admin/clients',
             title: 'Klienten',

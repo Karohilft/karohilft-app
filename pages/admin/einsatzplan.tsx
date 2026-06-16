@@ -354,12 +354,12 @@ export default function AdminEinsatzplan() {
               <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
               <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Einsatzplanung</h1>
             </div>
-            <button onClick={openOpenNew} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>+ Offener Einsatz</button>
+            <button onClick={openOpenNew} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>+ Neuer Einsatz</button>
           </div>
 
           {showOpenForm && (
             <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingOpenId ? 'Einsatz bearbeiten' : editingOpenRuleId ? 'Festen Termin bearbeiten' : 'Neuer individueller Einsatz'}</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingOpenId ? 'Einsatz bearbeiten' : editingOpenRuleId ? 'Festen Termin bearbeiten' : 'Neuer Einsatz'}</h2>
               <div style={{ display: 'grid', gap: 12 }}>
                 <select value={openForm.client_id} onChange={e => setOpenForm(f => ({ ...f, client_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
                   <option value="">– Klient –</option>
@@ -418,7 +418,7 @@ export default function AdminEinsatzplan() {
 
           {openRules.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Offene feste Termine</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Feste Termine ohne Betreuer</h2>
               {openRules.map(r => (
                 <div key={r.id} onClick={() => openOpenEditRule(r)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: '4px solid var(--rose)' }}>
                   <div>
@@ -445,7 +445,7 @@ export default function AdminEinsatzplan() {
             )
             return (
               <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Noch zu vergeben ({openEntries.length})</h2>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Einzeltermine ohne Betreuer ({openEntries.length})</h2>
                 {urgentEntries.map(e => renderEntry(e, true))}
                 {futureEntries.length > 0 && (
                   <>
@@ -460,6 +460,7 @@ export default function AdminEinsatzplan() {
             )
           })()}
 
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 10px' }}>Betreuer einteilen</h2>
           <input placeholder="Betreuer suchen…" value={caregiverSearch} onChange={e => setCaregiverSearch(e.target.value)} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box', marginBottom: 10, background: '#fff' }} />
 
           {caregivers.length === 0
