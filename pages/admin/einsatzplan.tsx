@@ -71,6 +71,7 @@ export default function AdminEinsatzplan() {
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null)
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [savedMsg, setSavedMsg] = useState('')
   const [form, setForm] = useState({ client_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
   const [recurring, setRecurring] = useState(false)
   const [recurDays, setRecurDays] = useState<number[]>([])
@@ -400,6 +401,9 @@ export default function AdminEinsatzplan() {
 
       setShowForm(false)
       setSaving(false)
+      const n = dates.length
+      setSavedMsg(n > 1 ? `${n} Termine gespeichert!` : 'Termin gespeichert!')
+      setTimeout(() => setSavedMsg(''), 3000)
       await load()
     } catch (err: any) {
       alert('Fehler beim Speichern: ' + (err?.message || String(err)))
@@ -618,6 +622,10 @@ export default function AdminEinsatzplan() {
           </div>
           <button onClick={openNew} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>+ Neu</button>
         </div>
+
+        {savedMsg && (
+          <div style={{ background: 'var(--sage)', color: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 16, fontWeight: 500, fontSize: 15, textAlign: 'center' }}>{savedMsg}</div>
+        )}
 
         {showForm && (
           <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
