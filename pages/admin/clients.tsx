@@ -38,7 +38,7 @@ export default function AdminClients() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' })
   const [openClientId, setOpenClientId] = useState<string | null>(null)
-  const [clientTab, setClientTab] = useState<'daten' | 'einsaetze'>('daten')
+  const [clientTab, setClientTab] = useState<'daten' | 'einsaetze' | 'dateien'>('daten')
   const [clientActivities, setClientActivities] = useState<AbrActivity[]>([])
   const [billedActivities, setBilledActivities] = useState<AbrActivity[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -303,12 +303,12 @@ export default function AdminClients() {
         {clients.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Klienten.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Klienten anzulegen.</span></div>
           : clients.map(c => {
-            const isOpen = openClientId === c.id
+            const panelOpen = openClientId === c.id
+            const btnStyle = { padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }
             return (
-              <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 10, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-                {/* Row header */}
-                <div onClick={() => toggleClient(c.id)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                  <div>
+              <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</div>
                     {(c.street || c.city) && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.zip, c.city].filter(Boolean).join(', ')}</div>}
                     <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
@@ -316,91 +316,72 @@ export default function AdminClients() {
                       {formatCardNumber(c.card_number)}
                     </div>
                   </div>
-                  <span style={{ color: 'var(--rose)', fontSize: 14, flexShrink: 0, marginLeft: 12 }}>{isOpen ? '▲' : '▼'}</span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <button onClick={() => edit(c)} style={btnStyle}>Bearbeiten</button>
+                    <button onClick={() => { if (panelOpen && clientTab === 'dateien') { setOpenClientId(null) } else { setOpenClientId(c.id); setClientTab('dateien' as any); loadDocFiles(c.id) } }} style={{ ...btnStyle, background: panelOpen && clientTab === 'dateien' ? 'var(--cream)' : '#fff' }}>Dateien</button>
+                    <button onClick={() => setPrintCard(c)} style={btnStyle}>Karte</button>
+                    <button onClick={() => { if (panelOpen && clientTab === 'einsaetze') { setOpenClientId(null) } else { setOpenClientId(c.id); setClientTab('einsaetze'); loadActivities(c.id) } }} style={{ ...btnStyle, background: panelOpen && clientTab === 'einsaetze' ? 'var(--cream)' : '#fff' }}>Einsätze</button>
+                    <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                  </div>
                 </div>
 
-                {/* Expanded panel */}
-                {isOpen && (
-                  <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
-                    {/* Tabs */}
-                    <div style={{ display: 'flex', borderBottom: '1px solid rgba(28,24,20,.08)' }}>
-                      {(['daten', 'einsaetze'] as const).map(tab => (
-                        <button key={tab} onClick={() => tab === 'einsaetze' ? openEinsaetze(c.id) : setClientTab('daten')} style={{ flex: 1, padding: '10px 0', border: 'none', background: 'none', fontSize: 14, fontWeight: 500, cursor: 'pointer', color: clientTab === tab ? 'var(--rose)' : 'var(--mid)', borderBottom: clientTab === tab ? '2px solid var(--rose)' : '2px solid transparent', marginBottom: -1 }}>
-                          {tab === 'daten' ? 'Daten' : 'Einsätze'}
-                        </button>
-                      ))}
-                    </div>
+                {panelOpen && clientTab === ('dateien' as any) && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(28,24,20,.08)' }}>
+                    {docFiles.length === 0 && <div style={{ fontSize: 13, color: 'var(--mid)', fontStyle: 'italic', marginBottom: 8 }}>Keine Dateien.</div>}
+                    {docFiles.map(f => (
+                      <div key={f.path} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '6px 10px', background: 'var(--cream)', borderRadius: 'var(--r-sm)' }}>
+                        <a href={getDocUrl(f.path)} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, color: 'var(--rose)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name.replace(/^\d+_/, '')}</a>
+                        <button onClick={() => deleteDocFile(f.path, c.id)} style={{ fontSize: 12, color: '#c45a5a', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: '2px 6px' }}>×</button>
+                      </div>
+                    ))}
+                    <button onClick={() => pickFile(file => uploadDocFile(c.id, file))} disabled={uploadingDoc} style={{ marginTop: 4, padding: '8px 16px', borderRadius: 'var(--r-sm)', border: '1.5px dashed rgba(28,24,20,.2)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: uploadingDoc ? 'default' : 'pointer', width: '100%', textAlign: 'center' }}>
+                      {uploadingDoc ? 'Hochladen…' : '⬆ Datei hochladen'}
+                    </button>
+                  </div>
+                )}
 
-                    {clientTab === 'daten' && (
-                      <div style={{ padding: '14px 18px' }}>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                          <button onClick={e => { e.stopPropagation(); edit(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
-                          <button onClick={e => { e.stopPropagation(); setPrintCard(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte drucken</button>
-                          <button onClick={e => { e.stopPropagation(); del(c.id) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid #fcc', background: '#fff', color: '#C0392B', fontSize: 13, cursor: 'pointer' }}>Löschen</button>
-                        </div>
-                        <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
-                          <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8, fontWeight: 500 }}>Dokumente</div>
-                          {docFiles.length === 0 && <div style={{ fontSize: 13, color: 'var(--mid)', fontStyle: 'italic', marginBottom: 8 }}>Keine Dokumente hochgeladen.</div>}
-                          {docFiles.map(f => (
-                            <div key={f.path} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '6px 10px', background: 'var(--cream)', borderRadius: 'var(--r-sm)' }}>
-                              <span style={{ fontSize: 15 }}>📄</span>
-                              <a href={getDocUrl(f.path)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ flex: 1, fontSize: 13, color: 'var(--rose)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name.replace(/^\d+_/, '')}</a>
-                              <button onClick={e => { e.stopPropagation(); deleteDocFile(f.path, c.id) }} style={{ fontSize: 12, color: '#c45a5a', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: '2px 6px' }}>✕</button>
+                {panelOpen && clientTab === 'einsaetze' && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(28,24,20,.08)' }}>
+                    {clientActivities.length === 0
+                      ? <div style={{ color: 'var(--mid)', fontSize: 14 }}>Keine offenen Einsätze zur Abrechnung.</div>
+                      : (
+                        <>
+                          <div style={{ fontSize: 12, color: 'var(--mid)', marginBottom: 10 }}>Einsätze auswählen und als abgerechnet markieren.</div>
+                          {clientActivities.map(a => (
+                            <div key={a.id} onClick={() => toggleSelect(a.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--r-sm)', marginBottom: 6, cursor: 'pointer', background: selectedIds.has(a.id) ? 'rgba(180,60,60,.07)' : 'var(--cream)', border: selectedIds.has(a.id) ? '1.5px solid var(--rose)' : '1.5px solid transparent' }}>
+                              <span style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selectedIds.has(a.id) ? 'var(--rose)' : '#ccc'}`, background: selectedIds.has(a.id) ? 'var(--rose)' : '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {selectedIds.has(a.id) && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
+                              </span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--dark)' }}>{new Date(a.datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(a.zeit_von)}–{hm(a.zeit_bis)}</div>
+                                <div style={{ fontSize: 13, color: 'var(--mid)' }}>{a.caregiver?.name || '–'}</div>
+                              </div>
                             </div>
                           ))}
-                          <button onClick={e => { e.stopPropagation(); pickFile(file => uploadDocFile(c.id, file)) }} disabled={uploadingDoc} style={{ marginTop: 4, padding: '8px 16px', borderRadius: 'var(--r-sm)', border: '1.5px dashed rgba(28,24,20,.2)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: uploadingDoc ? 'default' : 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                            ⬆ {uploadingDoc ? 'Hochladen…' : 'Datei hochladen'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {clientTab === 'einsaetze' && (
-                      <div style={{ padding: '14px 18px' }}>
-                        {clientActivities.length === 0
-                          ? <div style={{ color: 'var(--mid)', fontSize: 14 }}>Keine offenen Einsätze zur Abrechnung.</div>
-                          : (
-                            <>
-                              <div style={{ fontSize: 12, color: 'var(--mid)', marginBottom: 10 }}>Einsätze auswählen und als abgerechnet markieren – sie verschwinden danach aus der Liste.</div>
-                              {clientActivities.map(a => (
-                                <div key={a.id} onClick={() => toggleSelect(a.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--r-sm)', marginBottom: 6, cursor: 'pointer', background: selectedIds.has(a.id) ? 'rgba(var(--rose-rgb, 180,60,60),.07)' : 'var(--cream)', border: selectedIds.has(a.id) ? '1.5px solid var(--rose)' : '1.5px solid transparent' }}>
-                                  <span style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selectedIds.has(a.id) ? 'var(--rose)' : '#ccc'}`, background: selectedIds.has(a.id) ? 'var(--rose)' : '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {selectedIds.has(a.id) && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
-                                  </span>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--dark)' }}>{new Date(a.datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(a.zeit_von)}–{hm(a.zeit_bis)}</div>
-                                    <div style={{ fontSize: 13, color: 'var(--mid)' }}>{a.caregiver?.name || '–'}</div>
-                                  </div>
-                                </div>
-                              ))}
-                              <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
-                                <button onClick={e => { e.stopPropagation(); setSelectedIds(new Set(clientActivities.map(a => a.id))) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: 'pointer' }}>Alle auswählen</button>
-                                <button onClick={e => { e.stopPropagation(); markAbgerechnet() }} disabled={selectedIds.size === 0 || abrechnung} style={{ padding: '8px 20px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: selectedIds.size === 0 || abrechnung ? 0.5 : 1 }}>
-                                  {abrechnung ? 'Wird gespeichert…' : `${selectedIds.size > 0 ? selectedIds.size + ' ' : ''}Abgerechnet`}
-                                </button>
-                              </div>
-                            </>
-                          )}
-
-                        {billedActivities.length > 0 && (
-                          <div style={{ marginTop: 20 }}>
-                            <div onClick={e => { e.stopPropagation(); setShowBilled(s => !s) }} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '6px 0' }}>
-                              <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--sage)', flexShrink: 0 }} />
-                              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--dark)' }}>Abgerechnet</span>
-                              <span style={{ fontSize: 13, color: 'var(--mid)' }}>({billedActivities.length})</span>
-                              <span style={{ color: 'var(--mid)', fontSize: 12, marginLeft: 'auto' }}>{showBilled ? '▲' : '▼'}</span>
-                            </div>
-                            {showBilled && billedActivities.map(a => (
-                              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--r-sm)', marginBottom: 4, background: 'var(--cream)', opacity: 0.7 }}>
-                                <span style={{ fontSize: 13, color: 'var(--sage)', flexShrink: 0 }}>✓</span>
-                                <div>
-                                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--dark)' }}>{new Date(a.datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(a.zeit_von)}–{hm(a.zeit_bis)}</div>
-                                  <div style={{ fontSize: 13, color: 'var(--mid)' }}>{a.caregiver?.name || '–'}</div>
-                                </div>
-                              </div>
-                            ))}
+                          <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <button onClick={() => setSelectedIds(new Set(clientActivities.map(a => a.id)))} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: 'pointer' }}>Alle auswählen</button>
+                            <button onClick={markAbgerechnet} disabled={selectedIds.size === 0 || abrechnung} style={{ padding: '8px 20px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: selectedIds.size === 0 || abrechnung ? 0.5 : 1 }}>
+                              {abrechnung ? 'Wird gespeichert…' : `${selectedIds.size > 0 ? selectedIds.size + ' ' : ''}Abgerechnet`}
+                            </button>
                           </div>
-                        )}
+                        </>
+                      )}
+                    {billedActivities.length > 0 && (
+                      <div style={{ marginTop: 16 }}>
+                        <div onClick={() => setShowBilled(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '6px 0' }}>
+                          <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--sage)', flexShrink: 0 }} />
+                          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--dark)' }}>Abgerechnet ({billedActivities.length})</span>
+                          <span style={{ color: 'var(--mid)', fontSize: 12, marginLeft: 'auto' }}>{showBilled ? '▲' : '▼'}</span>
+                        </div>
+                        {showBilled && billedActivities.map(a => (
+                          <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--r-sm)', marginBottom: 4, background: 'var(--cream)', opacity: 0.7 }}>
+                            <span style={{ fontSize: 13, color: 'var(--sage)', flexShrink: 0 }}>✓</span>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--dark)' }}>{new Date(a.datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(a.zeit_von)}–{hm(a.zeit_bis)}</div>
+                              <div style={{ fontSize: 13, color: 'var(--mid)' }}>{a.caregiver?.name || '–'}</div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
