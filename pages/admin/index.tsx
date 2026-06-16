@@ -47,6 +47,10 @@ export default function AdminDashboard() {
             title: 'Tätigkeitsnachweise',
             desc: 'Bereits durchgeführte Einsätze einsehen & bearbeiten'
           }, {
+            href: '/admin/livein',
+            title: '24h-Betreuung',
+            desc: 'Live-In Schichten planen, Klienten & Betreuer verwalten'
+          }, {
             href: '/admin/clients',
             title: 'Klienten',
             desc: 'Betreute Personen'
