@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
-import WheelTimePicker from '../components/WheelTimePicker'
+import TimeSelect from '../components/TimeSelect'
 
 type Client = { id: string; name: string }
 
@@ -122,11 +122,11 @@ export default function EintragPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit von</label>
-                <WheelTimePicker value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ fontSize: 16 }} />
+                <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ fontSize: 16 }} />
               </div>
               <div>
                 <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 6, fontWeight: 500 }}>Zeit bis</label>
-                <WheelTimePicker value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ fontSize: 16 }} />
+                <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ fontSize: 16 }} />
               </div>
             </div>
 

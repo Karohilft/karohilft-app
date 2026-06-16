@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 import { hm } from '../../lib/time'
-import WheelTimePicker from '../../components/WheelTimePicker'
+import TimeSelect from '../../components/TimeSelect'
 
 type ScheduleEntry = {
   id: string
@@ -177,10 +177,10 @@ export default function AdminUebersicht() {
                 </select>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
-                    <WheelTimePicker value={editForm.zeit_von} onChange={v => setEditForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
+                    <TimeSelect value={editForm.zeit_von} onChange={v => setEditForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
                   </label>
                   <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis
-                    <WheelTimePicker value={editForm.zeit_bis} onChange={v => setEditForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
+                    <TimeSelect value={editForm.zeit_bis} onChange={v => setEditForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
                   </label>
                 </div>
                 <input placeholder="Ort (optional)" value={editForm.ort} onChange={e => setEditForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
-import WheelTimePicker from '../../components/WheelTimePicker'
+import TimeSelect from '../../components/TimeSelect'
 import { hm } from '../../lib/time'
 
 type Entry = {
@@ -412,10 +412,10 @@ export default function AdminEinsatzplan() {
                   </label>
                 )}
                 <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
-                  <WheelTimePicker value={openForm.zeit_von} onChange={v => setOpenForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
+                  <TimeSelect value={openForm.zeit_von} onChange={v => setOpenForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
                 </label>
                 <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis
-                  <WheelTimePicker value={openForm.zeit_bis} onChange={v => setOpenForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
+                  <TimeSelect value={openForm.zeit_bis} onChange={v => setOpenForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
                 </label>
                 <input placeholder="Ort (optional)" value={openForm.ort} onChange={e => setOpenForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
 
@@ -433,10 +433,10 @@ export default function AdminEinsatzplan() {
                         </select>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                           <label style={{ fontSize: 12, color: 'var(--mid)' }}>Von
-                            <WheelTimePicker value={s.zeit_von} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 3 }} />
+                            <TimeSelect value={s.zeit_von} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 3 }} />
                           </label>
                           <label style={{ fontSize: 12, color: 'var(--mid)' }}>Bis
-                            <WheelTimePicker value={s.zeit_bis} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 3 }} />
+                            <TimeSelect value={s.zeit_bis} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 3 }} />
                           </label>
                         </div>
                         <input placeholder="Ort (optional)" value={s.ort} onChange={e => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, ort: e.target.value } : x))} style={{ padding: '10px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
@@ -579,10 +579,10 @@ export default function AdminEinsatzplan() {
               )}
 
               <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
-                <WheelTimePicker value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
+                <TimeSelect value={form.zeit_von} onChange={v => setForm(f => ({ ...f, zeit_von: v }))} style={{ marginTop: 4 }} />
               </label>
               <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis
-                <WheelTimePicker value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
+                <TimeSelect value={form.zeit_bis} onChange={v => setForm(f => ({ ...f, zeit_bis: v }))} style={{ marginTop: 4 }} />
               </label>
               <input placeholder="Ort (optional)" value={form.ort} onChange={e => setForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
 
@@ -600,10 +600,10 @@ export default function AdminEinsatzplan() {
                       </select>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                         <label style={{ fontSize: 12, color: 'var(--mid)' }}>Von
-                          <WheelTimePicker value={s.zeit_von} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 3 }} />
+                          <TimeSelect value={s.zeit_von} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 3 }} />
                         </label>
                         <label style={{ fontSize: 12, color: 'var(--mid)' }}>Bis
-                          <WheelTimePicker value={s.zeit_bis} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 3 }} />
+                          <TimeSelect value={s.zeit_bis} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 3 }} />
                         </label>
                       </div>
                       <input placeholder="Ort (optional)" value={s.ort} onChange={e => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, ort: e.target.value } : x))} style={{ padding: '10px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 14 }} />
