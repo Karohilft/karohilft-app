@@ -197,8 +197,9 @@ export default function AdminLiveIn() {
   async function uploadClientFile(clientId: string, file: File) {
     setUploadingClient(true)
     const path = `clients/${clientId}/${Date.now()}_${file.name}`
-    await getSupabase().storage.from(BUCKET).upload(path, file)
-    setClientFiles(await loadEntityFiles('clients', clientId))
+    const { error } = await getSupabase().storage.from(BUCKET).upload(path, file)
+    if (error) alert('Upload fehlgeschlagen: ' + error.message)
+    else setClientFiles(await loadEntityFiles('clients', clientId))
     setUploadingClient(false)
   }
 
@@ -227,8 +228,9 @@ export default function AdminLiveIn() {
   async function uploadCaregiverFile(caregiverId: string, file: File) {
     setUploadingCaregiver(true)
     const path = `caregivers/${caregiverId}/${Date.now()}_${file.name}`
-    await getSupabase().storage.from(BUCKET).upload(path, file)
-    setCaregiverFiles(await loadEntityFiles('caregivers', caregiverId))
+    const { error } = await getSupabase().storage.from(BUCKET).upload(path, file)
+    if (error) alert('Upload fehlgeschlagen: ' + error.message)
+    else setCaregiverFiles(await loadEntityFiles('caregivers', caregiverId))
     setUploadingCaregiver(false)
   }
 
@@ -298,7 +300,7 @@ export default function AdminLiveIn() {
         <textarea placeholder="Notizen" value={clientForm.notes} onChange={e => setClientForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
         <div>
           <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8 }}>Eigenschaften</div>
-          <Toggle label="🐾 Haustier vorhanden" checked={clientForm.haustier} onChange={v => setClientForm(f => ({ ...f, haustier: v }))} />
+          <Toggle label="Haustier vorhanden" checked={clientForm.haustier} onChange={v => setClientForm(f => ({ ...f, haustier: v }))} />
         </div>
         {editingId && (
           <FileSection
@@ -327,8 +329,8 @@ export default function AdminLiveIn() {
         <div>
           <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8 }}>Eigenschaften</div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <Toggle label="🚗 Führerschein" checked={caregiverForm.fuehrerschein} onChange={v => setCaregiverForm(f => ({ ...f, fuehrerschein: v }))} />
-            <Toggle label="🚬 Raucher" checked={caregiverForm.raucher} onChange={v => setCaregiverForm(f => ({ ...f, raucher: v }))} />
+            <Toggle label="Führerschein" checked={caregiverForm.fuehrerschein} onChange={v => setCaregiverForm(f => ({ ...f, fuehrerschein: v }))} />
+            <Toggle label="Raucher" checked={caregiverForm.raucher} onChange={v => setCaregiverForm(f => ({ ...f, raucher: v }))} />
           </div>
         </div>
         {editingId && (
@@ -356,7 +358,7 @@ export default function AdminLiveIn() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0 }}>24h-Betreuung</h1>
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(28,24,20,.1)', marginBottom: 20, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(28,24,20,.1)', marginBottom: 20, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } as any}>
           {(['planung', 'einsaetze', 'klienten', 'betreuer'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 18px', border: 'none', background: 'none', fontSize: 14, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', color: tab === t ? 'var(--rose)' : 'var(--mid)', borderBottom: tab === t ? '2px solid var(--rose)' : '2px solid transparent', marginBottom: -1 }}>
               {t === 'planung' ? 'Planung' : t === 'einsaetze' ? 'Einsätze' : t === 'klienten' ? 'Klienten' : 'Betreuer'}
@@ -413,7 +415,7 @@ export default function AdminLiveIn() {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, fontSize: 16, color: 'var(--dark)' }}>{c.name}</span>
-                            {c.haustier && <span style={{ fontSize: 12, background: 'rgba(28,24,20,.07)', borderRadius: 'var(--r-pill)', padding: '2px 8px', color: 'var(--mid)' }}>🐾 Haustier</span>}
+                            {c.haustier && <span style={{ fontSize: 12, background: 'rgba(28,24,20,.07)', borderRadius: 'var(--r-pill)', padding: '2px 8px', color: 'var(--mid)' }}>Haustier</span>}
                           </div>
                           {c.city && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{c.city}</div>}
                         </div>
@@ -517,7 +519,7 @@ export default function AdminLiveIn() {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
-                        {c.haustier && <span style={{ fontSize: 12, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>🐾 Haustier</span>}
+                        {c.haustier && <span style={{ fontSize: 12, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Haustier</span>}
                       </div>
                       {(c.street || c.city) && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.city].filter(Boolean).join(', ')}</div>}
                     </div>
@@ -557,8 +559,8 @@ export default function AdminLiveIn() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
                           {c.sprache && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>{c.sprache}</span>}
-                          {c.fuehrerschein && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>🚗 Führerschein</span>}
-                          {c.raucher && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>🚬 Raucher</span>}
+                          {c.fuehrerschein && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Führerschein</span>}
+                          {c.raucher && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Raucher</span>}
                         </div>
                         <div style={{ fontSize: 13, color: cur ? 'var(--sage)' : 'var(--mid)', marginTop: 3 }}>
                           {cur ? `Aktuell bei: ${cur.client?.name || '–'}${cur.end_date ? ` (bis ${fmtDate(cur.end_date)})` : ''}` : 'Aktuell frei'}
