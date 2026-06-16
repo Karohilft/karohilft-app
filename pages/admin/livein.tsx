@@ -333,7 +333,7 @@ export default function AdminLiveIn() {
             <Toggle label="Raucher" checked={caregiverForm.raucher} onChange={v => setCaregiverForm(f => ({ ...f, raucher: v }))} />
           </div>
         </div>
-        {editingId && (
+        {editingId ? (
           <FileSection
             files={caregiverFiles}
             uploading={uploadingCaregiver}
