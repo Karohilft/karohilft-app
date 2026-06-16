@@ -38,32 +38,10 @@ type RuleEntry = {
   client: { name: string } | null
 }
 
-type UnassignedEntry = {
-  id: string
-  client_id: string
-  datum: string
-  zeit_von: string
-  zeit_bis: string
-  ort: string | null
-  cancelled_by: string | null
-  cancelled_at: string | null
-  client: { name: string } | null
-}
-
 type Person = { id: string; name: string }
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
-}
-
-function addDays(dateStr: string, n: number) {
-  const d = new Date(dateStr + 'T00:00:00')
-  d.setDate(d.getDate() + n)
-  return d.toISOString().slice(0, 10)
-}
-
-function fmtDate(dateStr: string) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit' })
 }
 
 function weekdayOf(dateStr: string) {
@@ -81,9 +59,6 @@ export default function AdminUebersicht() {
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([])
   const [activities, setActivities] = useState<ActivityEntry[]>([])
   const [rules, setRules] = useState<RuleEntry[]>([])
-  const [unassigned, setUnassigned] = useState<UnassignedEntry[]>([])
-  const [showFuture, setShowFuture] = useState(false)
-  const [showCancelled, setShowCancelled] = useState(false)
   const [caregivers, setCaregivers] = useState<Person[]>([])
   const [clients, setClients] = useState<Person[]>([])
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null)
@@ -92,18 +67,16 @@ export default function AdminUebersicht() {
 
   async function load() {
     const today = todayStr()
-    const [{ data: sched }, { data: acts }, { data: rls }, { data: unas }, { data: cgs }, { data: cls }] = await Promise.all([
+    const [{ data: sched }, { data: acts }, { data: rls }, { data: cgs }, { data: cls }] = await Promise.all([
       getSupabase().from('schedule').select('id,caregiver_id,client_id,zeit_von,zeit_bis,ort,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
       getSupabase().from('activities').select('id,caregiver_id,client_id,zeit_von,zeit_bis,caregiver:caregivers(name),client:clients(name)').eq('datum', today).order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date,caregiver:caregivers(name),client:clients(name)'),
-      getSupabase().from('schedule').select('id,client_id,datum,zeit_von,zeit_bis,ort,cancelled_by,cancelled_at,client:clients(name)').is('caregiver_id', null).gte('datum', today).order('datum').order('zeit_von'),
       getSupabase().from('caregivers').select('id,name').neq('role', 'admin').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
     ])
     setSchedule((sched as any) || [])
     setActivities((acts as any) || [])
     setRules((rls as any) || [])
-    setUnassigned((unas as any) || [])
     setCaregivers((cgs as any) || [])
     setClients((cls as any) || [])
     setLoading(false)
@@ -207,76 +180,6 @@ export default function AdminUebersicht() {
             </div>
           </div>
         )}
-
-        {unassigned.some(e => e.cancelled_by) && (() => {
-          const cancelled = unassigned.filter(e => e.cancelled_by).sort((a, b) => (b.cancelled_at || '').localeCompare(a.cancelled_at || ''))
-          const visible = cancelled.slice(0, 3)
-          const rest = cancelled.slice(3)
-          return (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#C0392B', flexShrink: 0 }} />
-                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Kürzlich storniert</h2>
-                <span style={{ fontSize: 13, color: 'var(--mid)' }}>({cancelled.length})</span>
-              </div>
-              {visible.map(e => (
-                <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #C0392B' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
-                  <div style={{ fontSize: 13, color: '#C0392B', marginTop: 2 }}>Storniert von {e.cancelled_by}</div>
-                </div>
-              ))}
-              {rest.length > 0 && (
-                <>
-                  <div onClick={() => setShowCancelled(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px', cursor: 'pointer', color: 'var(--mid)', fontSize: 13 }}>
-                    <span>{showCancelled ? '▲' : '▼'}</span>
-                    <span>{rest.length} weitere Stornierung{rest.length === 1 ? '' : 'en'}</span>
-                  </div>
-                  {showCancelled && rest.map(e => (
-                    <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #C0392B' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
-                      <div style={{ fontSize: 13, color: '#C0392B', marginTop: 2 }}>Storniert von {e.cancelled_by}</div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          )
-        })()}
-
-        {unassigned.length > 0 && (() => {
-          const urgentEntries = unassigned.filter(e => e.datum <= addDays(today, 3))
-          const futureEntries = unassigned.filter(e => e.datum > addDays(today, 3))
-          const renderEntry = (e: UnassignedEntry, urgent: boolean) => (
-            <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: urgent ? '4px solid var(--rose)' : '4px solid var(--mid)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)} · {e.client?.name || '–'}</div>
-                {e.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{e.ort}</div>}
-              </div>
-              {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}
-            </div>
-          )
-          return (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--rose)', flexShrink: 0 }} />
-                <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>Noch zu vergeben</h2>
-                <span style={{ fontSize: 13, color: 'var(--mid)' }}>({unassigned.length})</span>
-              </div>
-              {urgentEntries.length === 0 && futureEntries.length === 0
-                ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
-                : urgentEntries.map(e => renderEntry(e, true))}
-              {futureEntries.length > 0 && (
-                <>
-                  <div onClick={() => setShowFuture(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px', cursor: 'pointer', color: 'var(--mid)', fontSize: 13 }}>
-                    <span>{showFuture ? '▲' : '▼'}</span>
-                    <span>{futureEntries.length} weitere{futureEntries.length === 1 ? 'r' : ''} Termin{futureEntries.length === 1 ? '' : 'e'} (später)</span>
-                  </div>
-                  {showFuture && futureEntries.map(e => renderEntry(e, false))}
-                </>
-              )}
-            </div>
-          )
-        })()}
 
         {(() => {
           const timeline = [
