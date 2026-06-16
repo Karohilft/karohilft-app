@@ -30,8 +30,10 @@ export default function AdminClients() {
   const [openClientId, setOpenClientId] = useState<string | null>(null)
   const [clientTab, setClientTab] = useState<'daten' | 'einsaetze'>('daten')
   const [clientActivities, setClientActivities] = useState<AbrActivity[]>([])
+  const [billedActivities, setBilledActivities] = useState<AbrActivity[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [abrechnung, setAbrechnung] = useState(false)
+  const [showBilled, setShowBilled] = useState(false)
 
   async function load() {
     const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number').order('name')
@@ -76,14 +78,12 @@ export default function AdminClients() {
   }
 
   async function loadActivities(clientId: string) {
-    const { data } = await getSupabase()
-      .from('activities')
-      .select('id,datum,zeit_von,zeit_bis,caregiver:caregivers(name)')
-      .eq('client_id', clientId)
-      .eq('abgerechnet', false)
-      .order('datum', { ascending: false })
-      .order('zeit_von', { ascending: false })
-    setClientActivities((data as any) || [])
+    const [{ data: open }, { data: billed }] = await Promise.all([
+      getSupabase().from('activities').select('id,datum,zeit_von,zeit_bis,caregiver:caregivers(name)').eq('client_id', clientId).eq('abgerechnet', false).order('datum', { ascending: false }).order('zeit_von', { ascending: false }),
+      getSupabase().from('activities').select('id,datum,zeit_von,zeit_bis,caregiver:caregivers(name)').eq('client_id', clientId).eq('abgerechnet', true).order('datum', { ascending: false }).order('zeit_von', { ascending: false }),
+    ])
+    setClientActivities((open as any) || [])
+    setBilledActivities((billed as any) || [])
     setSelectedIds(new Set())
   }
 
@@ -327,6 +327,26 @@ export default function AdminClients() {
                               </div>
                             </>
                           )}
+
+                        {billedActivities.length > 0 && (
+                          <div style={{ marginTop: 20 }}>
+                            <div onClick={e => { e.stopPropagation(); setShowBilled(s => !s) }} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '6px 0' }}>
+                              <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--sage)', flexShrink: 0 }} />
+                              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--dark)' }}>Abgerechnet</span>
+                              <span style={{ fontSize: 13, color: 'var(--mid)' }}>({billedActivities.length})</span>
+                              <span style={{ color: 'var(--mid)', fontSize: 12, marginLeft: 'auto' }}>{showBilled ? '▲' : '▼'}</span>
+                            </div>
+                            {showBilled && billedActivities.map(a => (
+                              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--r-sm)', marginBottom: 4, background: 'var(--cream)', opacity: 0.7 }}>
+                                <span style={{ fontSize: 13, color: 'var(--sage)', flexShrink: 0 }}>✓</span>
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--dark)' }}>{new Date(a.datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(a.zeit_von)}–{hm(a.zeit_bis)}</div>
+                                  <div style={{ fontSize: 13, color: 'var(--mid)' }}>{a.caregiver?.name || '–'}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
