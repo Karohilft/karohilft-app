@@ -13,6 +13,8 @@ type Entry = {
   zeit_bis: string
   ort: string | null
   series_id: string | null
+  cancelled_by: string | null
+  cancelled_at: string | null
 }
 
 type Rule = {
@@ -87,7 +89,7 @@ export default function AdminEinsatzplan() {
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }] = await Promise.all([
       getSupabase().from('caregivers').select('id,name,absent').neq('role', 'admin').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
-      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id').gte('datum', todayStr()).order('datum').order('zeit_von'),
+      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id,cancelled_by,cancelled_at').gte('datum', todayStr()).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').order('zeit_von'),
     ])
     setCaregivers((cgs as any) || [])
@@ -435,12 +437,16 @@ export default function AdminEinsatzplan() {
             const urgentEntries = openEntries.filter(e => e.datum <= addDays(todayStr(), 3))
             const futureEntries = openEntries.filter(e => e.datum > addDays(todayStr(), 3))
             const renderEntry = (e: Entry, urgent: boolean) => (
-              <div key={e.id} onClick={() => openOpenEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: urgent ? '4px solid var(--rose)' : undefined }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
+              <div key={e.id} onClick={() => openOpenEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: e.cancelled_by ? '4px solid #C0392B' : urgent ? '4px solid var(--rose)' : undefined }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: e.cancelled_by ? '#C0392B' : urgent ? 'var(--rose)' : 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
                   <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
+                  {e.cancelled_by && <div style={{ fontSize: 12, color: '#C0392B', marginTop: 3 }}>Storniert von {e.cancelled_by} – neu vergeben?</div>}
                 </div>
-                {urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>dringend</span>}
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 10 }}>
+                  {e.cancelled_by && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: '#C0392B', color: '#fff' }}>storniert</span>}
+                  {!e.cancelled_by && urgent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff' }}>dringend</span>}
+                </div>
               </div>
             )
             return (
