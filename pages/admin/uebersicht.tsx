@@ -112,10 +112,25 @@ export default function AdminUebersicht() {
     await load()
   }
 
-  function openEdit(e: ScheduleEntry) {
-    if (e.id.startsWith('rule-')) return
-    setEditEntry(e)
-    setEditForm({ caregiver_id: e.caregiver_id || '', client_id: e.client_id || '', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
+  async function openEdit(e: ScheduleEntry) {
+    let entry = e
+    if (e.id.startsWith('rule-')) {
+      // Materialize the rule as a one-time schedule entry for today
+      const today = todayStr()
+      const { data, error } = await getSupabase().from('schedule').insert({
+        caregiver_id: e.caregiver_id,
+        client_id: e.client_id,
+        datum: today,
+        zeit_von: e.zeit_von,
+        zeit_bis: e.zeit_bis,
+        ort: e.ort,
+      }).select('id,caregiver_id,client_id,zeit_von,zeit_bis,ort,caregiver:caregivers(name),client:clients(name)').single()
+      if (error || !data) { alert('Fehler: ' + (error?.message || 'Unbekannt')); return }
+      entry = data as any
+      await load()
+    }
+    setEditEntry(entry)
+    setEditForm({ caregiver_id: entry.caregiver_id || '', client_id: entry.client_id || '', zeit_von: entry.zeit_von, zeit_bis: entry.zeit_bis, ort: entry.ort || '' })
   }
 
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
@@ -197,9 +212,8 @@ export default function AdminUebersicht() {
               {timeline.length === 0
                 ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', color: 'var(--mid)', fontSize: 14, boxShadow: 'var(--shadow-sm)' }}>–</div>
                 : timeline.map(({ entry: e, color }) => {
-                  const isRule = e.id.startsWith('rule-')
                   const isActivity = extraAbgeschlossen.some(a => a.id === e.id)
-                  const editable = !isRule && !isActivity
+                  const editable = !isActivity
                   return (
                     <div key={e.id} onClick={() => editable ? openEdit(e) : undefined} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${color}`, opacity: color === 'var(--sage)' ? 0.6 : 1, cursor: editable ? 'pointer' : 'default' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
