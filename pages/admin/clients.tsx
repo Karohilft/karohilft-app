@@ -4,8 +4,10 @@ import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
+import { hm } from '../../lib/time'
 
 type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null }
+type AbrActivity = { id: string; datum: string; zeit_von: string; zeit_bis: string; caregiver: { name: string } | null }
 
 function validUntil() {
   const d = new Date()
@@ -25,6 +27,11 @@ export default function AdminClients() {
   const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' })
+  const [openClientId, setOpenClientId] = useState<string | null>(null)
+  const [clientTab, setClientTab] = useState<'daten' | 'einsaetze'>('daten')
+  const [clientActivities, setClientActivities] = useState<AbrActivity[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [abrechnung, setAbrechnung] = useState(false)
 
   async function load() {
     const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number').order('name')
@@ -66,6 +73,50 @@ export default function AdminClients() {
     const { error } = await getSupabase().from('clients').delete().eq('id', id)
     if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
     await load()
+  }
+
+  async function loadActivities(clientId: string) {
+    const { data } = await getSupabase()
+      .from('activities')
+      .select('id,datum,zeit_von,zeit_bis,caregiver:caregivers(name)')
+      .eq('client_id', clientId)
+      .eq('abgerechnet', false)
+      .order('datum', { ascending: false })
+      .order('zeit_von', { ascending: false })
+    setClientActivities((data as any) || [])
+    setSelectedIds(new Set())
+  }
+
+  function toggleClient(id: string) {
+    if (openClientId === id) {
+      setOpenClientId(null)
+    } else {
+      setOpenClientId(id)
+      setClientTab('daten')
+      setClientActivities([])
+      setSelectedIds(new Set())
+    }
+  }
+
+  async function openEinsaetze(clientId: string) {
+    setClientTab('einsaetze')
+    await loadActivities(clientId)
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function markAbgerechnet() {
+    if (selectedIds.size === 0) return
+    setAbrechnung(true)
+    await getSupabase().from('activities').update({ abgerechnet: true }).in('id', [...selectedIds])
+    await loadActivities(openClientId!)
+    setAbrechnung(false)
   }
 
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
@@ -213,23 +264,76 @@ export default function AdminClients() {
 
         {clients.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Klienten.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Klienten anzulegen.</span></div>
-          : clients.map(c => (
-            <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</div>
-                {(c.street || c.city) && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.zip, c.city].filter(Boolean).join(', ')}</div>}
-                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-                  {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
-                  {formatCardNumber(c.card_number)}
+          : clients.map(c => {
+            const isOpen = openClientId === c.id
+            return (
+              <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 10, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+                {/* Row header */}
+                <div onClick={() => toggleClient(c.id)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</div>
+                    {(c.street || c.city) && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.zip, c.city].filter(Boolean).join(', ')}</div>}
+                    <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+                      {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
+                      {formatCardNumber(c.card_number)}
+                    </div>
+                  </div>
+                  <span style={{ color: 'var(--rose)', fontSize: 14, flexShrink: 0, marginLeft: 12 }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
+
+                {/* Expanded panel */}
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
+                    {/* Tabs */}
+                    <div style={{ display: 'flex', borderBottom: '1px solid rgba(28,24,20,.08)' }}>
+                      {(['daten', 'einsaetze'] as const).map(tab => (
+                        <button key={tab} onClick={() => tab === 'einsaetze' ? openEinsaetze(c.id) : setClientTab('daten')} style={{ flex: 1, padding: '10px 0', border: 'none', background: 'none', fontSize: 14, fontWeight: 500, cursor: 'pointer', color: clientTab === tab ? 'var(--rose)' : 'var(--mid)', borderBottom: clientTab === tab ? '2px solid var(--rose)' : '2px solid transparent', marginBottom: -1 }}>
+                          {tab === 'daten' ? 'Daten' : 'Einsätze'}
+                        </button>
+                      ))}
+                    </div>
+
+                    {clientTab === 'daten' && (
+                      <div style={{ padding: '14px 18px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button onClick={e => { e.stopPropagation(); edit(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
+                        <button onClick={e => { e.stopPropagation(); setPrintCard(c) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte drucken</button>
+                        <button onClick={e => { e.stopPropagation(); del(c.id) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid #fcc', background: '#fff', color: '#C0392B', fontSize: 13, cursor: 'pointer' }}>Löschen</button>
+                      </div>
+                    )}
+
+                    {clientTab === 'einsaetze' && (
+                      <div style={{ padding: '14px 18px' }}>
+                        {clientActivities.length === 0
+                          ? <div style={{ color: 'var(--mid)', fontSize: 14 }}>Keine offenen Einsätze zur Abrechnung.</div>
+                          : (
+                            <>
+                              <div style={{ fontSize: 12, color: 'var(--mid)', marginBottom: 10 }}>Einsätze auswählen und als abgerechnet markieren – sie verschwinden danach aus der Liste.</div>
+                              {clientActivities.map(a => (
+                                <div key={a.id} onClick={() => toggleSelect(a.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--r-sm)', marginBottom: 6, cursor: 'pointer', background: selectedIds.has(a.id) ? 'rgba(var(--rose-rgb, 180,60,60),.07)' : 'var(--cream)', border: selectedIds.has(a.id) ? '1.5px solid var(--rose)' : '1.5px solid transparent' }}>
+                                  <span style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selectedIds.has(a.id) ? 'var(--rose)' : '#ccc'}`, background: selectedIds.has(a.id) ? 'var(--rose)' : '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {selectedIds.has(a.id) && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
+                                  </span>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--dark)' }}>{new Date(a.datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(a.zeit_von)}–{hm(a.zeit_bis)}</div>
+                                    <div style={{ fontSize: 13, color: 'var(--mid)' }}>{a.caregiver?.name || '–'}</div>
+                                  </div>
+                                </div>
+                              ))}
+                              <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+                                <button onClick={e => { e.stopPropagation(); setSelectedIds(new Set(clientActivities.map(a => a.id))) }} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: 'pointer' }}>Alle auswählen</button>
+                                <button onClick={e => { e.stopPropagation(); markAbgerechnet() }} disabled={selectedIds.size === 0 || abrechnung} style={{ padding: '8px 20px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: selectedIds.size === 0 || abrechnung ? 0.5 : 1 }}>
+                                  {abrechnung ? 'Wird gespeichert…' : `${selectedIds.size > 0 ? selectedIds.size + ' ' : ''}Abgerechnet`}
+                                </button>
+                              </div>
+                            </>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button onClick={() => edit(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
-                <button onClick={() => setPrintCard(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte</button>
-                <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
       </div>
     </div>
   )
