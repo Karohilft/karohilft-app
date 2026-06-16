@@ -71,7 +71,7 @@ export default function AdminEinsatzplan() {
   const [editingSeriesId, setEditingSeriesId] = useState<string | null>(null)
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ client_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+  const [form, setForm] = useState({ client_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
   const [recurring, setRecurring] = useState(false)
   const [recurDays, setRecurDays] = useState<number[]>([])
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
@@ -236,7 +236,7 @@ export default function AdminEinsatzplan() {
     setEditingRuleId(null)
     setRecurring(false)
     setRecurDays([])
-    setForm({ client_id: '', datum: todayStr(), zeit_von: '', zeit_bis: '', ort: '' })
+    setForm({ client_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
     setExtraSlots([])
     setShowForm(true)
   }
@@ -247,7 +247,7 @@ export default function AdminEinsatzplan() {
     setEditingRuleId(null)
     setRecurring(false)
     setRecurDays([])
-    setForm({ client_id: e.client_id, datum: e.datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
+    setForm({ client_id: e.client_id, datum: e.datum, datum_bis: '', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
     setExtraSlots([])
     setShowForm(true)
   }
@@ -258,7 +258,7 @@ export default function AdminEinsatzplan() {
     setEditingRuleId(r.id)
     setRecurring(true)
     setRecurDays(r.weekdays)
-    setForm({ client_id: r.client_id, datum: r.start_date, zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort || '' })
+    setForm({ client_id: r.client_id, datum: r.start_date, datum_bis: '', zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort || '' })
     setShowForm(true)
   }
 
@@ -327,25 +327,46 @@ export default function AdminEinsatzplan() {
     }
 
     if (!form.datum) return
-    const conflict = checkConflict(selected.id, form.datum, form.zeit_von, form.zeit_bis, editingId)
-    if (conflict) { alert('Überschneidung: ' + conflict); return }
+
+    // Build list of dates (single day or range)
+    const dates: string[] = []
+    if (!editingId && form.datum_bis && form.datum_bis >= form.datum) {
+      let d = form.datum
+      while (d <= form.datum_bis) {
+        dates.push(d)
+        d = addDays(d, 1)
+      }
+    } else {
+      dates.push(form.datum)
+    }
+
+    for (const datum of dates) {
+      const conflict = checkConflict(selected.id, datum, form.zeit_von, form.zeit_bis, editingId)
+      if (conflict) { alert('Überschneidung: ' + conflict); return }
+    }
     for (const s of extraSlots) {
       if (!s.zeit_von || !s.zeit_bis) continue
-      const c2 = checkConflict(selected.id, form.datum, s.zeit_von, s.zeit_bis, null)
-      if (c2) { alert('Überschneidung (Zeitblock): ' + c2); return }
+      for (const datum of dates) {
+        const c2 = checkConflict(selected.id, datum, s.zeit_von, s.zeit_bis, null)
+        if (c2) { alert('Überschneidung (Zeitblock): ' + c2); return }
+      }
     }
 
     setSaving(true)
-    const payload = { caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }
-    const { error } = editingId
-      ? await getSupabase().from('schedule').update(payload).eq('id', editingId)
-      : await getSupabase().from('schedule').insert(payload)
-    if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
+    if (editingId) {
+      const { error } = await getSupabase().from('schedule').update({ caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }).eq('id', editingId)
+      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
+    } else {
+      const rows = dates.map(datum => ({ caregiver_id: selected.id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }))
+      const { error } = await getSupabase().from('schedule').insert(rows)
+      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
+    }
 
     if (!editingId && extraSlots.length > 0) {
       const extras = extraSlots.filter(s => s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
       if (extras.length > 0) {
-        const { error: e2 } = await getSupabase().from('schedule').insert(extras.map(s => ({ caregiver_id: selected.id, client_id: s.client_id || form.client_id, datum: form.datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+        const extraRows = dates.flatMap(datum => extras.map(s => ({ caregiver_id: selected.id, client_id: s.client_id || form.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+        const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
         if (e2) { alert('Fehler bei Zusatz-Zeitblöcken: ' + e2.message); setSaving(false); return }
       }
     }
@@ -572,9 +593,14 @@ export default function AdminEinsatzplan() {
               </select>
 
               {!recurring && (
-                <label style={{ fontSize: 13, color: 'var(--mid)' }}>Datum
-                  <input type="date" value={form.datum} onChange={e => setForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von-Datum *
+                    <input type="date" value={form.datum} onChange={e => setForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                  </label>
+                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis-Datum (opt.)
+                    <input type="date" value={form.datum_bis} min={form.datum} onChange={e => setForm(f => ({ ...f, datum_bis: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                  </label>
+                </div>
               )}
 
               <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
