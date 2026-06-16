@@ -421,16 +421,20 @@ export default function AdminEinsatzplan() {
 
                 {!editingOpenId && !openRecurring && (
                   <>
-                    {openExtraSlots.map((s, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(28,24,20,.03)', borderRadius: 'var(--r-sm)', padding: '10px 12px' }}>
-                        <span style={{ fontSize: 13, color: 'var(--mid)', flexShrink: 0 }}>+</span>
-                        <TimeSelect value={s.zeit_von} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 0 }} />
-                        <span style={{ fontSize: 13, color: 'var(--mid)', flexShrink: 0 }}>–</span>
-                        <TimeSelect value={s.zeit_bis} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 0 }} />
-                        <button type="button" onClick={() => setOpenExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0, marginLeft: 'auto' }}>×</button>
+                    {openExtraSlots.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {openExtraSlots.map((s, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(180,60,60,.05)', border: '1px solid rgba(180,60,60,.15)', borderRadius: 'var(--r-sm)', padding: '10px 14px' }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--rose)', flexShrink: 0, minWidth: 16 }}>{i + 2}.</span>
+                            <TimeSelect value={s.zeit_von} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 0 }} />
+                            <span style={{ fontSize: 14, color: 'var(--mid)', flexShrink: 0 }}>–</span>
+                            <TimeSelect value={s.zeit_bis} onChange={v => setOpenExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 0 }} />
+                            <button type="button" onClick={() => setOpenExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', marginLeft: 'auto', flexShrink: 0 }}>×</button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    <button type="button" onClick={() => setOpenExtraSlots(sl => [...sl, { client_id: '', zeit_von: '', zeit_bis: '', ort: '' }])} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: '1.5px dashed rgba(28,24,20,.2)', background: 'transparent', color: 'var(--mid)', fontSize: 13, cursor: 'pointer', width: '100%' }}>+ Weiterer Zeitblock am selben Tag</button>
+                    )}
+                    <button type="button" onClick={() => setOpenExtraSlots(sl => [...sl, { client_id: '', zeit_von: '', zeit_bis: '', ort: '' }])} style={{ padding: '9px 16px', borderRadius: 'var(--r-pill)', border: '1.5px dashed rgba(180,60,60,.3)', background: 'rgba(180,60,60,.03)', color: 'var(--rose)', fontSize: 13, cursor: 'pointer', width: '100%', fontWeight: 500 }}>+ Weiterer Zeitblock am selben Tag</button>
                   </>
                 )}
 
@@ -576,16 +580,20 @@ export default function AdminEinsatzplan() {
 
               {!editingId && !recurring && (
                 <>
-                  {extraSlots.map((s, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(28,24,20,.03)', borderRadius: 'var(--r-sm)', padding: '10px 12px' }}>
-                      <span style={{ fontSize: 13, color: 'var(--mid)', flexShrink: 0 }}>+</span>
-                      <TimeSelect value={s.zeit_von} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 0 }} />
-                      <span style={{ fontSize: 13, color: 'var(--mid)', flexShrink: 0 }}>–</span>
-                      <TimeSelect value={s.zeit_bis} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 0 }} />
-                      <button type="button" onClick={() => setExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0, marginLeft: 'auto' }}>×</button>
+                  {extraSlots.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {extraSlots.map((s, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(180,60,60,.05)', border: '1px solid rgba(180,60,60,.15)', borderRadius: 'var(--r-sm)', padding: '10px 14px' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--rose)', flexShrink: 0, minWidth: 16 }}>{i + 2}.</span>
+                          <TimeSelect value={s.zeit_von} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_von: v } : x))} style={{ marginTop: 0 }} />
+                          <span style={{ fontSize: 14, color: 'var(--mid)', flexShrink: 0 }}>–</span>
+                          <TimeSelect value={s.zeit_bis} onChange={v => setExtraSlots(sl => sl.map((x, j) => j === i ? { ...x, zeit_bis: v } : x))} style={{ marginTop: 0 }} />
+                          <button type="button" onClick={() => setExtraSlots(sl => sl.filter((_, j) => j !== i))} style={{ background: 'transparent', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', marginLeft: 'auto', flexShrink: 0 }}>×</button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  <button type="button" onClick={() => setExtraSlots(sl => [...sl, { client_id: '', zeit_von: '', zeit_bis: '', ort: '' }])} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: '1.5px dashed rgba(28,24,20,.2)', background: 'transparent', color: 'var(--mid)', fontSize: 13, cursor: 'pointer', width: '100%' }}>+ Weiterer Zeitblock am selben Tag</button>
+                  )}
+                  <button type="button" onClick={() => setExtraSlots(sl => [...sl, { client_id: '', zeit_von: '', zeit_bis: '', ort: '' }])} style={{ padding: '9px 16px', borderRadius: 'var(--r-pill)', border: '1.5px dashed rgba(180,60,60,.3)', background: 'rgba(180,60,60,.03)', color: 'var(--rose)', fontSize: 13, cursor: 'pointer', width: '100%', fontWeight: 500 }}>+ Weiterer Zeitblock am selben Tag</button>
                 </>
               )}
 
