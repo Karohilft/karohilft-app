@@ -220,27 +220,32 @@ export default function AdminEinsatzplan() {
     }
 
     setSavingOpen(true)
-    if (editingOpenId) {
-      const { error } = await getSupabase().from('schedule').update({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum: openForm.datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }).eq('id', editingOpenId)
-      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
-    } else {
-      const rows = openDates.map(datum => ({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }))
-      const { error } = await getSupabase().from('schedule').insert(rows)
-      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
-    }
-
-    if (!editingOpenId && openExtraSlots.length > 0) {
-      const extras = openExtraSlots.filter(s => s.client_id && s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
-      if (extras.length > 0) {
-        const extraRows = openDates.flatMap(datum => extras.map(s => ({ caregiver_id: openForm.caregiver_id || null, client_id: s.client_id || openForm.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
-        const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
-        if (e2) { alert('Fehler bei Zusatz-Zeitblöcken: ' + e2.message); setSavingOpen(false); return }
+    try {
+      if (editingOpenId) {
+        const { error } = await getSupabase().from('schedule').update({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum: openForm.datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }).eq('id', editingOpenId)
+        if (error) throw new Error(error.message)
+      } else {
+        const rows = openDates.map(datum => ({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }))
+        const { error } = await getSupabase().from('schedule').insert(rows)
+        if (error) throw new Error(error.message)
       }
-    }
 
-    setShowOpenForm(false)
-    setSavingOpen(false)
-    await load()
+      if (!editingOpenId && openExtraSlots.length > 0) {
+        const extras = openExtraSlots.filter(s => s.client_id && s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
+        if (extras.length > 0) {
+          const extraRows = openDates.flatMap(datum => extras.map(s => ({ caregiver_id: openForm.caregiver_id || null, client_id: s.client_id || openForm.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+          const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
+          if (e2) throw new Error(e2.message)
+        }
+      }
+
+      setShowOpenForm(false)
+      setSavingOpen(false)
+      await load()
+    } catch (err: any) {
+      alert('Fehler beim Speichern: ' + (err?.message || String(err)))
+      setSavingOpen(false)
+    }
   }
 
   function toggleDate(datum: string) {
@@ -374,27 +379,32 @@ export default function AdminEinsatzplan() {
     }
 
     setSaving(true)
-    if (editingId) {
-      const { error } = await getSupabase().from('schedule').update({ caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }).eq('id', editingId)
-      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
-    } else {
-      const rows = dates.map(datum => ({ caregiver_id: selected.id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }))
-      const { error } = await getSupabase().from('schedule').insert(rows)
-      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
-    }
-
-    if (!editingId && extraSlots.length > 0) {
-      const extras = extraSlots.filter(s => s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
-      if (extras.length > 0) {
-        const extraRows = dates.flatMap(datum => extras.map(s => ({ caregiver_id: selected.id, client_id: s.client_id || form.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
-        const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
-        if (e2) { alert('Fehler bei Zusatz-Zeitblöcken: ' + e2.message); setSaving(false); return }
+    try {
+      if (editingId) {
+        const { error } = await getSupabase().from('schedule').update({ caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }).eq('id', editingId)
+        if (error) throw new Error(error.message)
+      } else {
+        const rows = dates.map(datum => ({ caregiver_id: selected.id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }))
+        const { error } = await getSupabase().from('schedule').insert(rows)
+        if (error) throw new Error(error.message)
       }
-    }
 
-    setShowForm(false)
-    setSaving(false)
-    await load()
+      if (!editingId && extraSlots.length > 0) {
+        const extras = extraSlots.filter(s => s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
+        if (extras.length > 0) {
+          const extraRows = dates.flatMap(datum => extras.map(s => ({ caregiver_id: selected.id, client_id: s.client_id || form.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+          const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
+          if (e2) throw new Error(e2.message)
+        }
+      }
+
+      setShowForm(false)
+      setSaving(false)
+      await load()
+    } catch (err: any) {
+      alert('Fehler beim Speichern: ' + (err?.message || String(err)))
+      setSaving(false)
+    }
   }
 
   async function del(id: string) {
