@@ -741,7 +741,7 @@ export default function AdminEinsatzplan() {
             if (block.kind === 'single') {
               const e = block.entry
               const done = isCompleted(e)
-              const past = e.datum < todayStr()
+              const past = e.datum <= todayStr()
               const overdue = past && !done
               return (
                 <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1, borderLeft: overdue ? '4px solid #E67E22' : done ? '4px solid var(--sage)' : undefined }}>
@@ -750,7 +750,7 @@ export default function AdminEinsatzplan() {
                     <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}{done ? ' ✓' : overdue ? ' – nicht abgeschlossen' : ''}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {overdue && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '4px 10px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 12, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
+                    {!done && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '4px 10px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 12, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
                     <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
                   </div>
                 </div>
@@ -761,7 +761,7 @@ export default function AdminEinsatzplan() {
               const expanded = expandedDates.has(key)
               const days = block.entries.length
               const doneCount = block.entries.filter(e => isCompleted(e)).length
-              const overdueCount = block.entries.filter(e => e.datum < todayStr() && !isCompleted(e)).length
+              const overdueCount = block.entries.filter(e => e.datum <= todayStr() && !isCompleted(e)).length
               const allDone = doneCount === days
               const statusText = doneCount > 0 || overdueCount > 0 ? `${doneCount}/${days} erledigt${overdueCount > 0 ? `, ${overdueCount} offen` : ''}` : `${days} Tage`
               return (
@@ -777,13 +777,13 @@ export default function AdminEinsatzplan() {
                     <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
                       {block.entries.map(e => {
                         const done = isCompleted(e)
-                        const past = e.datum < todayStr()
+                        const past = e.datum <= todayStr()
                         const overdue = past && !done
                         return (
                           <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
                             <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none', flex: 1 }}>{fmtDate(e.datum)}{done ? ' ✓' : overdue ? ' ⚠' : ''}</div>
                             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                              {overdue && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
+                              {!done && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
                               <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
                             </div>
                           </div>
