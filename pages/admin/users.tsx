@@ -58,8 +58,9 @@ export default function AdminUsers() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify(payload),
       })
-      if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Anlegen fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
-      alert(`Betreuer angelegt!\n\nEine Einladungs-E-Mail wurde an ${form.email} gesendet.\nDer Betreuer kann damit ein Passwort setzen und sich einloggen.`)
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { alert('Anlegen fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
+      alert(`Betreuer angelegt!\n\nZugangsdaten für ${form.email}:\nPasswort: ${j.tempPassword}\n\nBitte dem Betreuer mitteilen. Beim ersten Login wird er aufgefordert, das Passwort zu ändern.`)
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }

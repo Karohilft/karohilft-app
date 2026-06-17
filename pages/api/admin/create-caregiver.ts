@@ -26,11 +26,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { data: caller } = await db.from('caregivers').select('role').eq('email', user.email).single()
   if (caller?.role !== 'admin') return res.status(403).json({ error: 'Kein Admin-Zugriff' })
 
-  const { data: invited, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: name },
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'}/login`,
+  const tempPassword = Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4)
+
+  const { data: created, error: createError } = await db.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true,
+    user_metadata: { full_name: name, must_change_password: true },
   })
-  if (inviteError) return res.status(400).json({ error: inviteError.message })
+  if (createError) return res.status(400).json({ error: createError.message })
 
   const { error: insertError } = await db.from('caregivers').insert({
     name, email, phone: phone || null, role: role || 'user',
@@ -40,9 +44,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     notes: notes || null,
   })
   if (insertError) {
-    if (invited.user) await db.auth.admin.deleteUser(invited.user.id)
+    if (created.user) await db.auth.admin.deleteUser(created.user.id)
     return res.status(400).json({ error: insertError.message })
   }
 
-  return res.status(200).json({ success: true })
+  return res.status(200).json({ success: true, tempPassword })
 }
