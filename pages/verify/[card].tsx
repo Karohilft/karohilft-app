@@ -33,7 +33,7 @@ export default function VerifyCard() {
             <p style={{ color: '#8C857D', fontSize: 14, margin: '0 0 4px' }}>{result.type}</p>
             <p style={{ color: '#8C857D', fontSize: 13, margin: '0 0 20px' }}>{formatCardNumber(result.card_number)}</p>
             <div style={{ display: 'inline-block', padding: '8px 20px', borderRadius: 20, background: 'rgba(76,175,80,.1)', color: '#388E3C', fontWeight: 600, fontSize: 14 }}>
-              Aktiver Mitarbeiter ✅
+              Aktiv ✅
             </div>
           </div>
         )}
