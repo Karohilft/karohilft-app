@@ -609,7 +609,7 @@ export default function AdminEinsatzplan() {
           {caregivers.length === 0
             ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer angelegt.</div>
             : caregivers.filter(c => c.name.toLowerCase().includes(caregiverSearch.toLowerCase())).map(c => {
-              const count = entries.filter(e => e.caregiver_id === c.id).length + rules.filter(r => r.caregiver_id === c.id).length
+              const count = entries.filter(e => e.caregiver_id === c.id && !isCompleted(e)).length + rules.filter(r => r.caregiver_id === c.id).length
               return (
                 <div key={c.id} onClick={() => setSelected(c)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                   <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</span>
