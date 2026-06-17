@@ -76,16 +76,13 @@ export default function AdminEinsatzplan() {
   const [saving, setSaving] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
   const [form, setForm] = useState({ client_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
-  const [recurring, setRecurring] = useState(false)
-  const [recurDays, setRecurDays] = useState<number[]>([])
+  const [filterDays, setFilterDays] = useState<number[]>([])
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
   const [showOpenForm, setShowOpenForm] = useState(false)
   const [editingOpenId, setEditingOpenId] = useState<string | null>(null)
   const [openForm, setOpenForm] = useState({ client_id: '', caregiver_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
   const [savingOpen, setSavingOpen] = useState(false)
-  const [openRecurring, setOpenRecurring] = useState(false)
-  const [openRecurDays, setOpenRecurDays] = useState<number[]>([])
-  const [editingOpenRuleId, setEditingOpenRuleId] = useState<string | null>(null)
+  const [openFilterDays, setOpenFilterDays] = useState<number[]>([])
   const [caregiverSearch, setCaregiverSearch] = useState('')
   const [showFutureOpen, setShowFutureOpen] = useState(false)
   type ExtraSlot = { client_id: string; zeit_von: string; zeit_bis: string; ort: string }
@@ -176,9 +173,7 @@ export default function AdminEinsatzplan() {
 
   function openOpenNew() {
     setEditingOpenId(null)
-    setEditingOpenRuleId(null)
-    setOpenRecurring(false)
-    setOpenRecurDays([])
+    setOpenFilterDays([])
     setOpenForm({ client_id: '', caregiver_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
     setOpenExtraSlots([])
     setShowOpenForm(true)
@@ -186,60 +181,28 @@ export default function AdminEinsatzplan() {
 
   function openOpenEdit(e: Entry) {
     setEditingOpenId(e.id)
-    setEditingOpenRuleId(null)
-    setOpenRecurring(false)
-    setOpenRecurDays([])
+    setOpenFilterDays([])
     setOpenForm({ client_id: e.client_id, caregiver_id: e.caregiver_id || '', datum: e.datum, datum_bis: '', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
     setOpenExtraSlots([])
     setShowOpenForm(true)
   }
 
-  function openOpenEditRule(r: Rule) {
-    setEditingOpenId(null)
-    setEditingOpenRuleId(r.id)
-    setOpenRecurring(true)
-    setOpenRecurDays(r.weekdays)
-    setOpenForm({ client_id: r.client_id, caregiver_id: r.caregiver_id || '', datum: r.start_date, datum_bis: '', zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort || '' })
-    setShowOpenForm(true)
-  }
-
-  function toggleOpenRecurDay(idx: number) {
-    setOpenRecurDays(d => d.includes(idx) ? d.filter(x => x !== idx) : [...d, idx].sort())
-  }
-
   async function saveOpen() {
     if (!openForm.client_id || !openForm.zeit_von || !openForm.zeit_bis) return
     if (openForm.zeit_von >= openForm.zeit_bis) { alert('Die Endzeit muss nach der Startzeit liegen.'); return }
-
-    if (openRecurring) {
-      if (openRecurDays.length === 0) { alert('Bitte mindestens einen Wochentag wählen.'); return }
-      const startDate = openForm.datum || todayStr()
-      if (openForm.caregiver_id) {
-        const conflict = ruleConflict(openForm.caregiver_id, openRecurDays, openForm.zeit_von, openForm.zeit_bis, startDate, editingOpenRuleId)
-        if (conflict) { alert('Überschneidung: ' + conflict); return }
-      }
-      setSavingOpen(true)
-      const payload = { caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, weekdays: openRecurDays, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null, start_date: startDate }
-      const { error } = editingOpenRuleId
-        ? await getSupabase().from('schedule_rules').update(payload).eq('id', editingOpenRuleId)
-        : await getSupabase().from('schedule_rules').insert(payload)
-      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSavingOpen(false); return }
-      setShowOpenForm(false)
-      setSavingOpen(false)
-      await load()
-      return
-    }
-
     if (!openForm.datum) return
 
-    // Build list of dates (single day or range)
-    const openDates: string[] = []
+    let openDates: string[] = []
     if (!editingOpenId && openForm.datum_bis && openForm.datum_bis >= openForm.datum) {
       let d = openForm.datum
       while (d <= openForm.datum_bis) {
         openDates.push(d)
         d = addDays(d, 1)
       }
+      if (openFilterDays.length > 0) {
+        openDates = openDates.filter(d => openFilterDays.includes(weekdayOf(d)))
+      }
+      if (openDates.length === 0) { alert('Keine Tage im gewählten Zeitraum für die ausgewählten Wochentage.'); return }
     } else {
       openDates.push(openForm.datum)
     }
@@ -299,8 +262,7 @@ export default function AdminEinsatzplan() {
     setEditingId(null)
     setEditingSeriesId(null)
     setEditingRuleId(null)
-    setRecurring(false)
-    setRecurDays([])
+    setFilterDays([])
     setForm({ client_id: '', datum: todayStr(), datum_bis: '', zeit_von: '', zeit_bis: '', ort: '' })
     setExtraSlots([])
     setShowForm(true)
@@ -310,8 +272,7 @@ export default function AdminEinsatzplan() {
     setEditingId(e.id)
     setEditingSeriesId(e.series_id)
     setEditingRuleId(null)
-    setRecurring(false)
-    setRecurDays([])
+    setFilterDays([])
     setForm({ client_id: e.client_id, datum: e.datum, datum_bis: '', zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort || '' })
     setExtraSlots([])
     setShowForm(true)
@@ -321,8 +282,6 @@ export default function AdminEinsatzplan() {
     setEditingId(null)
     setEditingSeriesId(null)
     setEditingRuleId(r.id)
-    setRecurring(true)
-    setRecurDays(r.weekdays)
     setForm({ client_id: r.client_id, datum: r.start_date, datum_bis: '', zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort || '' })
     setShowForm(true)
   }
@@ -372,35 +331,19 @@ export default function AdminEinsatzplan() {
     if (!selected) return
     if (!form.client_id || !form.zeit_von || !form.zeit_bis) return
     if (form.zeit_von >= form.zeit_bis) { alert('Die Endzeit muss nach der Startzeit liegen.'); return }
-
-    if (recurring) {
-      if (recurDays.length === 0) { alert('Bitte mindestens einen Wochentag wählen.'); return }
-      const startDate = form.datum || todayStr()
-      const conflict = ruleConflict(selected.id, recurDays, form.zeit_von, form.zeit_bis, startDate, editingRuleId)
-      if (conflict) { alert('Überschneidung: ' + conflict); return }
-
-      setSaving(true)
-      const payload = { caregiver_id: selected.id, client_id: form.client_id, weekdays: recurDays, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null, start_date: startDate }
-      const { error } = editingRuleId
-        ? await getSupabase().from('schedule_rules').update(payload).eq('id', editingRuleId)
-        : await getSupabase().from('schedule_rules').insert(payload)
-      if (error) { alert('Speichern fehlgeschlagen: ' + error.message); setSaving(false); return }
-      setShowForm(false)
-      setSaving(false)
-      await load()
-      return
-    }
-
     if (!form.datum) return
 
-    // Build list of dates (single day or range)
-    const dates: string[] = []
+    let dates: string[] = []
     if (!editingId && form.datum_bis && form.datum_bis >= form.datum) {
       let d = form.datum
       while (d <= form.datum_bis) {
         dates.push(d)
         d = addDays(d, 1)
       }
+      if (filterDays.length > 0) {
+        dates = dates.filter(d => filterDays.includes(weekdayOf(d)))
+      }
+      if (dates.length === 0) { alert('Keine Tage im gewählten Zeitraum für die ausgewählten Wochentage.'); return }
     } else {
       dates.push(form.datum)
     }
@@ -469,8 +412,12 @@ export default function AdminEinsatzplan() {
     await load()
   }
 
-  function toggleRecurDay(idx: number) {
-    setRecurDays(d => d.includes(idx) ? d.filter(x => x !== idx) : [...d, idx].sort())
+  function toggleFilterDay(idx: number) {
+    setFilterDays(d => d.includes(idx) ? d.filter(x => x !== idx) : [...d, idx].sort())
+  }
+
+  function toggleOpenFilterDay(idx: number) {
+    setOpenFilterDays(d => d.includes(idx) ? d.filter(x => x !== idx) : [...d, idx].sort())
   }
 
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
@@ -490,7 +437,7 @@ export default function AdminEinsatzplan() {
 
           {showOpenForm && (
             <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingOpenId ? 'Einsatz bearbeiten' : editingOpenRuleId ? 'Festen Termin bearbeiten' : 'Neuer Einsatz'}</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingOpenId ? 'Einsatz bearbeiten' : 'Neuer Einsatz'}</h2>
               <div style={{ display: 'grid', gap: 12 }}>
                 <select value={openForm.client_id} onChange={e => setOpenForm(f => ({ ...f, client_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
                   <option value="">– Klient –</option>
@@ -500,14 +447,22 @@ export default function AdminEinsatzplan() {
                   <option value="">– noch nicht zugeteilt –</option>
                   {caregivers.map(c => <option key={c.id} value={c.id}>{c.name}{c.absent ? ' (abwesend)' : ''}</option>)}
                 </select>
-                {!openRecurring && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von-Datum *
-                      <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                    </label>
-                    <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis-Datum (opt.)
-                      <input type="date" value={openForm.datum_bis} min={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum_bis: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                    </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von-Datum *
+                    <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                  </label>
+                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis-Datum (opt.)
+                    <input type="date" value={openForm.datum_bis} min={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum_bis: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                  </label>
+                </div>
+                {openForm.datum_bis && openForm.datum_bis >= openForm.datum && (
+                  <div>
+                    <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 6 }}>Nur an bestimmten Wochentagen? (leer = alle Tage)</div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {WEEKDAYS.map((wd, i) => (
+                        <button key={wd} type="button" onClick={() => toggleOpenFilterDay(i)} style={{ padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: openFilterDays.includes(i) ? 'var(--rose)' : '#fff', color: openFilterDays.includes(i) ? '#fff' : 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>{wd}</button>
+                      ))}
+                    </div>
                   </div>
                 )}
                 <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von
@@ -518,7 +473,7 @@ export default function AdminEinsatzplan() {
                 </label>
                 <input placeholder="Ort (optional)" value={openForm.ort} onChange={e => setOpenForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
 
-                {!editingOpenId && !openRecurring && (
+                {!editingOpenId && (
                   <>
                     {openExtraSlots.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -544,35 +499,10 @@ export default function AdminEinsatzplan() {
                   </>
                 )}
 
-                {!editingOpenId && (
-                  <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
-                    {!editingOpenRuleId && (
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--dark)', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={openRecurring} onChange={e => setOpenRecurring(e.target.checked)} />
-                        Fester Termin (z.B. Mo–Do, läuft bis er beendet wird)
-                      </label>
-                    )}
-                    {openRecurring && (
-                      <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {WEEKDAYS.map((wd, i) => (
-                            <button key={wd} type="button" onClick={() => toggleOpenRecurDay(i)} style={{ padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: openRecurDays.includes(i) ? 'var(--rose)' : '#fff', color: openRecurDays.includes(i) ? '#fff' : 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>{wd}</button>
-                          ))}
-                        </div>
-                        <label style={{ fontSize: 13, color: 'var(--mid)' }}>Beginnt am
-                          <input type="date" value={openForm.datum} onChange={e => setOpenForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                        </label>
-                        <p style={{ fontSize: 13, color: 'var(--mid)', margin: 0 }}>Läuft automatisch weiter, bis der Termin beendet wird.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   {editingOpenId && <button onClick={() => del(editingOpenId).then(() => setShowOpenForm(false))} style={{ padding: '10px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(196,90,90,.3)', background: '#fff', color: '#c45a5a', cursor: 'pointer', fontSize: 13, marginRight: 'auto' }}>Löschen</button>}
-                  {editingOpenRuleId && <button onClick={() => delRule(editingOpenRuleId).then(() => setShowOpenForm(false))} style={{ padding: '10px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(196,90,90,.3)', background: '#fff', color: '#c45a5a', cursor: 'pointer', fontSize: 13, marginRight: 'auto' }}>Festen Termin beenden</button>}
                   <button onClick={() => setShowOpenForm(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
-                  <button onClick={saveOpen} disabled={savingOpen || !openForm.client_id || !openForm.zeit_von || !openForm.zeit_bis || (openRecurring ? openRecurDays.length === 0 : !openForm.datum)} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: (savingOpen || !openForm.client_id || !openForm.zeit_von || !openForm.zeit_bis || (openRecurring ? openRecurDays.length === 0 : !openForm.datum)) ? 0.4 : 1 }}>{savingOpen ? 'Speichern…' : 'Speichern'}</button>
+                  <button onClick={saveOpen} disabled={savingOpen || !openForm.client_id || !openForm.zeit_von || !openForm.zeit_bis || !openForm.datum} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: (savingOpen || !openForm.client_id || !openForm.zeit_von || !openForm.zeit_bis || !openForm.datum) ? 0.4 : 1 }}>{savingOpen ? 'Speichern…' : 'Speichern'}</button>
                 </div>
               </div>
             </div>
@@ -582,12 +512,15 @@ export default function AdminEinsatzplan() {
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Feste Termine ohne Betreuer</h2>
               {openRules.map(r => (
-                <div key={r.id} onClick={() => openOpenEditRule(r)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderLeft: '4px solid var(--rose)' }}>
+                <div key={r.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--rose)' }}>
                   <div>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{weekdaysLabel(r.weekdays)} · {hm(r.zeit_von)}–{hm(r.zeit_bis)}</div>
                     <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(r.client_id)}{r.ort ? ` · ${r.ort}` : ''}</div>
                   </div>
-                  <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff', flexShrink: 0 }}>zu vergeben</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff' }}>zu vergeben</span>
+                    <button onClick={() => delRule(r.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -668,20 +601,29 @@ export default function AdminEinsatzplan() {
         {showForm && (
           <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '24px 20px', marginBottom: 20, boxShadow: 'var(--shadow-md)' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, color: 'var(--dark)', margin: '0 0 16px' }}>{editingId ? 'Termin bearbeiten' : editingRuleId ? 'Festen Termin bearbeiten' : 'Neuer Termin'}</h2>
+
             <div style={{ display: 'grid', gap: 12 }}>
               <select value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, background: '#fff' }}>
                 <option value="">– Klient –</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
 
-              {!recurring && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von-Datum *
-                    <input type="date" value={form.datum} onChange={e => setForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                  </label>
-                  <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis-Datum (opt.)
-                    <input type="date" value={form.datum_bis} min={form.datum} onChange={e => setForm(f => ({ ...f, datum_bis: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                  </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ fontSize: 13, color: 'var(--mid)' }}>Von-Datum *
+                  <input type="date" value={form.datum} onChange={e => setForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                </label>
+                <label style={{ fontSize: 13, color: 'var(--mid)' }}>Bis-Datum (opt.)
+                  <input type="date" value={form.datum_bis} min={form.datum} onChange={e => setForm(f => ({ ...f, datum_bis: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
+                </label>
+              </div>
+              {form.datum_bis && form.datum_bis >= form.datum && (
+                <div>
+                  <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 6 }}>Nur an bestimmten Wochentagen? (leer = alle Tage)</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {WEEKDAYS.map((wd, i) => (
+                      <button key={wd} type="button" onClick={() => toggleFilterDay(i)} style={{ padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: filterDays.includes(i) ? 'var(--rose)' : '#fff', color: filterDays.includes(i) ? '#fff' : 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>{wd}</button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -693,7 +635,7 @@ export default function AdminEinsatzplan() {
               </label>
               <input placeholder="Ort (optional)" value={form.ort} onChange={e => setForm(f => ({ ...f, ort: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
 
-              {!editingId && !recurring && (
+              {!editingId && (
                 <>
                   {extraSlots.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -719,30 +661,6 @@ export default function AdminEinsatzplan() {
                 </>
               )}
 
-              {!editingId && (
-                <div style={{ borderTop: '1px solid rgba(28,24,20,.08)', paddingTop: 12 }}>
-                  {!editingRuleId && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--dark)', cursor: 'pointer' }}>
-                      <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} />
-                      Fester Termin (z.B. Mo–Do, läuft bis er beendet wird)
-                    </label>
-                  )}
-                  {recurring && (
-                    <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {WEEKDAYS.map((wd, i) => (
-                          <button key={wd} type="button" onClick={() => toggleRecurDay(i)} style={{ padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: recurDays.includes(i) ? 'var(--rose)' : '#fff', color: recurDays.includes(i) ? '#fff' : 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>{wd}</button>
-                        ))}
-                      </div>
-                      <label style={{ fontSize: 13, color: 'var(--mid)' }}>Beginnt am
-                        <input type="date" value={form.datum} onChange={e => setForm(f => ({ ...f, datum: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%', boxSizing: 'border-box' }} />
-                      </label>
-                      <p style={{ fontSize: 13, color: 'var(--mid)', margin: 0 }}>Läuft automatisch weiter, bis der Termin beendet wird.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between' }}>
                 <div>
                   {editingSeriesId && <button onClick={() => delSeries(editingSeriesId)} style={{ padding: '10px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(196,90,90,.3)', background: '#fff', color: '#c45a5a', cursor: 'pointer', fontSize: 13 }}>Ganze Serie löschen</button>}
@@ -750,7 +668,7 @@ export default function AdminEinsatzplan() {
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => setShowForm(false)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
-                  <button onClick={save} disabled={saving || !form.client_id || !form.zeit_von || !form.zeit_bis || (recurring ? recurDays.length === 0 : !form.datum)} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: (saving || !form.client_id || !form.zeit_von || !form.zeit_bis || (recurring ? recurDays.length === 0 : !form.datum)) ? 0.4 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
+                  <button onClick={save} disabled={saving || !form.client_id || !form.zeit_von || !form.zeit_bis || !form.datum} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: (saving || !form.client_id || !form.zeit_von || !form.zeit_bis || !form.datum) ? 0.4 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
                 </div>
               </div>
             </div>
