@@ -5,7 +5,7 @@ import { hm } from '../../lib/time'
 
 type Entry = { id: string; client_id: string; datum: string; zeit_von: string; zeit_bis: string; ort: string | null }
 type Rule = { id: string; client_id: string; weekdays: number[]; zeit_von: string; zeit_bis: string; ort: string | null; start_date: string }
-type Client = { id: string; name: string; street: string; zip: string; city: string }
+type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string | null }
 type Exception = { rule_id: string; datum: string }
 
 type Activity = { client_id: string; datum: string }
@@ -51,7 +51,7 @@ export default function BetreuerPlan() {
     const [{ data: sched }, { data: rls }, { data: cls }, { data: exc }, { data: acts }] = await Promise.all([
       getSupabase().from('schedule').select('id,client_id,datum,zeit_von,zeit_bis,ort').eq('caregiver_id', cgId).gte('datum', today).lte('datum', until).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').eq('caregiver_id', cgId),
-      getSupabase().from('clients').select('id,name,street,zip,city'),
+      getSupabase().from('clients').select('id,name,street,zip,city,notes'),
       getSupabase().from('schedule_exceptions').select('rule_id,datum'),
       getSupabase().from('activities').select('client_id,datum').eq('caregiver_id', cgId).gte('datum', today).lte('datum', until),
     ])
@@ -79,6 +79,7 @@ export default function BetreuerPlan() {
 
   const clientName = (id: string) => clients.find(c => c.id === id)?.name || '–'
   const clientAddress = (id: string) => { const c = clients.find(c => c.id === id); return c ? [c.street, [c.zip, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') : '' }
+  const clientNotes = (id: string) => clients.find(c => c.id === id)?.notes || ''
   const isCompleted = (clientId: string, datum: string) => activities.some(a => a.client_id === clientId && a.datum === datum)
   const today = todayStr()
 
@@ -147,6 +148,7 @@ export default function BetreuerPlan() {
                 const key = `${datum}-${i}`
                 const isExpanded = expanded === key
                 const addr = clientAddress(it.client_id)
+                const notes = clientNotes(it.client_id)
                 return (
                 <div key={i} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
@@ -163,6 +165,13 @@ export default function BetreuerPlan() {
                   {isExpanded && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(28,24,20,.08)' }}>
                       {addr && <div style={{ fontSize: 13, color: 'var(--dark)', marginBottom: 6 }}>📍 {addr}</div>}
+                      {addr && (
+                        <a href={`https://maps.google.com/maps?q=${encodeURIComponent(addr)}`} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'block', width: '100%', padding: '10px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontWeight: 500, fontSize: 14, cursor: 'pointer', textAlign: 'center', textDecoration: 'none', marginBottom: 8 }}>
+                          🧭 Route starten
+                        </a>
+                      )}
+                      {notes && <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8, fontStyle: 'italic' }}>💬 {notes}</div>}
                       {datum <= today && (
                         <button onClick={() => router.push({ pathname: '/betreuer/eintrag', query: { client_id: it.client_id, client_name: it.client, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, datum } })}
                           style={{ width: '100%', padding: '10px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)' }}>
