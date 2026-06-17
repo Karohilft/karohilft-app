@@ -331,6 +331,7 @@ export default function AdminUsers() {
                     title="In Einsatzplanung ein-/ausblenden"
                     style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.hidden ? '#e67e22' : 'transparent', color: c.hidden ? '#fff' : 'var(--mid)', border: c.hidden ? 'none' : '1.5px solid rgba(28,24,20,.12)', cursor: 'pointer', lineHeight: 1.4 }}
                   >{c.hidden ? 'Ausgeblendet' : 'Sichtbar'}</button>
+                  {c.email && <button onClick={() => invite(c)} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', cursor: 'pointer', lineHeight: 1.4 }}>Einladen</button>}
                 </div>
                 {c.email && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{c.email}</div>}
                 {c.phone && <div style={{ fontSize: 14, color: 'var(--mid)' }}>{c.phone}</div>}
@@ -345,7 +346,6 @@ export default function AdminUsers() {
                 <button onClick={() => edit(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
                 <button onClick={() => toggleFiles(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: filesOpenId === c.id ? 'var(--cream)' : '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Dateien</button>
                 <button onClick={() => setPrintCard(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte</button>
-                {c.email && <button onClick={() => invite(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 13, cursor: 'pointer' }}>Einladen</button>}
                 <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
               </div>
             </div>
