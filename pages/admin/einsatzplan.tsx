@@ -438,6 +438,24 @@ export default function AdminEinsatzplan() {
     await load()
   }
 
+  async function adminComplete(e: Entry) {
+    if (!confirm(`Einsatz am ${fmtDate(e.datum)} (${hm(e.zeit_von)}–${hm(e.zeit_bis)}, ${clientName(e.client_id)}) als Admin abschließen?`)) return
+    const { error } = await getSupabase().from('activities').insert({
+      caregiver_id: e.caregiver_id,
+      caregiver_name: caregiverName(e.caregiver_id),
+      client_id: e.client_id,
+      client_name: clientName(e.client_id),
+      datum: e.datum,
+      zeit_von: e.zeit_von,
+      zeit_bis: e.zeit_bis,
+      unterschrift: null,
+      notiz: 'Abgeschlossen von Admin',
+      caregiver_no_show: false,
+    })
+    if (error) { alert('Fehler: ' + error.message); return }
+    await load()
+  }
+
   function toggleFilterDay(idx: number) {
     setFilterDays(d => d.includes(idx) ? d.filter(x => x !== idx) : [...d, idx].sort())
   }
@@ -727,11 +745,14 @@ export default function AdminEinsatzplan() {
               const overdue = past && !done
               return (
                 <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1, borderLeft: overdue ? '4px solid #E67E22' : done ? '4px solid var(--sage)' : undefined }}>
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 15, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
                     <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}{done ? ' ✓' : overdue ? ' – nicht abgeschlossen' : ''}</div>
                   </div>
-                  <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    {overdue && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '4px 10px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 12, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
+                    <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                  </div>
                 </div>
               )
             }
@@ -760,8 +781,11 @@ export default function AdminEinsatzplan() {
                         const overdue = past && !done
                         return (
                           <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
-                            <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)}{done ? ' ✓' : overdue ? ' ⚠' : ''}</div>
-                            <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                            <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none', flex: 1 }}>{fmtDate(e.datum)}{done ? ' ✓' : overdue ? ' ⚠' : ''}</div>
+                            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                              {overdue && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
+                              <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                            </div>
                           </div>
                         )
                       })}
@@ -794,11 +818,14 @@ export default function AdminEinsatzplan() {
                       const eOverdue = ePast && !done
                       return (
                         <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
-                          <div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 600, color: eOverdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}{done ? ' ✓' : eOverdue ? ' ⚠' : ''}</div>
                             <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
                           </div>
-                          <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                            {eOverdue && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
+                            <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                          </div>
                         </div>
                       )
                     })}
