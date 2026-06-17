@@ -36,7 +36,7 @@ export default function BetreuerHome() {
       {showCard && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 400, width: '100%' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Meine Karte</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Mein Ausweis</h2>
             <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <img src="/karohilft-logo.png" alt="Karohilft" style={{ height: 36 }} />
@@ -64,10 +64,11 @@ export default function BetreuerHome() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 6px' }}>
             Hallo{name ? `, ${name.split(' ')[0]}` : ''}!
           </h1>
-          <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Scanne die Klientenkarte um einen Eintrag zu erfassen.</p>
+          <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Schau in deine Einsätze für deine nächsten Termine.</p>
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '28px 24px', boxShadow: 'var(--shadow-sm)', textAlign: 'center' }}>
+        {/* QR-Scanner ausgeblendet – als Backup behalten */}
+        <div style={{ display: 'none', background: '#fff', borderRadius: 'var(--r-lg)', padding: '28px 24px', boxShadow: 'var(--shadow-sm)', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📷</div>
           <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--dark)', marginBottom: 6 }}>QR-Code scannen</div>
           <p style={{ fontSize: 14, color: 'var(--mid)', margin: '0 0 20px' }}>Halte die Kamera auf die Klientenkarte</p>
@@ -80,14 +81,14 @@ export default function BetreuerHome() {
           onClick={() => setShowCard(true)}
           style={{ marginTop: 14, width: '100%', padding: '13px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--rose)', background: '#fff', color: 'var(--rose)', fontWeight: 500, fontSize: 16, cursor: 'pointer' }}
         >
-          Meine Karte
+          Mein Ausweis
         </button>
 
         <button
           onClick={() => router.push('/betreuer/plan')}
           style={{ marginTop: 10, width: '100%', padding: '13px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontWeight: 500, fontSize: 16, cursor: 'pointer' }}
         >
-          Mein Plan
+          Meine Einsätze
         </button>
 
         <button
