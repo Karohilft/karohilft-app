@@ -5,8 +5,15 @@ import { getSupabase } from '../../lib/supabase'
 export default function AuthCallback() {
   const router = useRouter()
   useEffect(() => {
+    const hash = window.location.hash
+    const isRecovery = hash.includes('type=recovery')
     getSupabase().auth.getSession().then(({ data }) => {
-      router.replace(data.session ? '/admin' : '/login')
+      if (!data.session) { router.replace('/login'); return }
+      if (isRecovery || data.session.user.user_metadata?.must_change_password) {
+        router.replace('/update-password')
+      } else {
+        router.replace('/admin')
+      }
     })
   }, [router])
   return (

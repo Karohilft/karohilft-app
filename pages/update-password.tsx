@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
 
@@ -7,6 +7,18 @@ export default function UpdatePassword() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    getSupabase().auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setReady(true)
+      }
+    })
+    getSupabase().auth.getSession().then(({ data }) => {
+      if (data.session) setReady(true)
+    })
+  }, [])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
