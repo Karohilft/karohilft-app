@@ -77,6 +77,8 @@ export default function BetreuerEintrag() {
 
   async function save() {
     if (!form.client_id || !form.zeit_von || !form.zeit_bis || !signed) return
+    const saveDatum = confirmDatum || todayISO
+    if (saveDatum > todayISO) { alert('Einsätze können erst am jeweiligen Tag abgeschlossen werden.'); return }
     setSaving(true)
     const unterschrift = canvasRef.current!.toDataURL()
     const clientName = confirmClientName || clients.find(c => c.id === form.client_id)?.name || null

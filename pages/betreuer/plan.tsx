@@ -144,10 +144,11 @@ export default function BetreuerPlan() {
               {items.map((it, i) => (
                 <div key={i} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                    <div onClick={() => router.push({ pathname: '/betreuer/eintrag', query: { client_id: it.client_id, client_name: it.client, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, datum } })}
-                      style={{ cursor: 'pointer', flex: 1 }}>
+                    <div onClick={() => { if (datum <= today) router.push({ pathname: '/betreuer/eintrag', query: { client_id: it.client_id, client_name: it.client, zeit_von: it.zeit_von, zeit_bis: it.zeit_bis, datum } }) }}
+                      style={{ cursor: datum <= today ? 'pointer' : 'default', flex: 1 }}>
                       <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{hm(it.zeit_von)}–{hm(it.zeit_bis)} · {it.client}</div>
                       {it.ort && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{it.ort}</div>}
+                      {datum > today && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 4, fontStyle: 'italic' }}>Erst am {fmtDate(datum)} abschließbar</div>}
                     </div>
                     <button onClick={() => cancel(datum, it)} disabled={cancelling === `${datum}-${it.kind}-${it.sourceId}`}
                       style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(192,57,43,.3)', background: '#fff', color: '#C0392B', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: cancelling ? 0.6 : 1 }}>
