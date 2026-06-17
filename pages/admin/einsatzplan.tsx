@@ -57,11 +57,6 @@ function addDays(dateStr: string, n: number) {
   return `${y}-${m}-${day}`
 }
 
-function mondayOfWeek(dateStr: string) {
-  const wd = weekdayOf(dateStr)
-  return addDays(dateStr, -wd)
-}
-
 function weekdaysLabel(weekdays: number[]) {
   return [...weekdays].sort().map(d => WEEKDAYS[d]).join(', ')
 }
@@ -97,13 +92,13 @@ export default function AdminEinsatzplan() {
   const [openExtraSlots, setOpenExtraSlots] = useState<ExtraSlot[]>([])
 
   async function load() {
-    const weekStart = mondayOfWeek(todayStr())
+    const past30 = addDays(todayStr(), -30)
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }, { data: acts }] = await Promise.all([
       getSupabase().from('caregivers').select('id,name,absent').neq('role', 'admin').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
-      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id,cancelled_by,cancelled_at').gte('datum', weekStart).order('datum').order('zeit_von'),
+      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id,cancelled_by,cancelled_at').gte('datum', past30).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').order('zeit_von'),
-      getSupabase().from('activities').select('caregiver_id,client_id,datum').gte('datum', weekStart),
+      getSupabase().from('activities').select('caregiver_id,client_id,datum').gte('datum', past30),
     ])
     setCaregivers((cgs as any) || [])
     setClients((cls as any) || [])
@@ -708,11 +703,13 @@ export default function AdminEinsatzplan() {
             if (block.kind === 'single') {
               const e = block.entry
               const done = isCompleted(e)
+              const past = e.datum < todayStr()
+              const overdue = past && !done
               return (
-                <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1 }}>
+                <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1, borderLeft: overdue ? '4px solid #E67E22' : done ? '4px solid var(--sage)' : undefined }}>
                   <div>
-                    <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
-                    <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}{done ? ' ✓' : ''}</div>
+                    <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 15, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
+                    <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}{done ? ' ✓' : overdue ? ' – nicht abgeschlossen' : ''}</div>
                   </div>
                   <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
                 </div>
@@ -723,13 +720,15 @@ export default function AdminEinsatzplan() {
               const expanded = expandedDates.has(key)
               const days = block.entries.length
               const doneCount = block.entries.filter(e => isCompleted(e)).length
+              const overdueCount = block.entries.filter(e => e.datum < todayStr() && !isCompleted(e)).length
               const allDone = doneCount === days
+              const statusText = doneCount > 0 || overdueCount > 0 ? `${doneCount}/${days} erledigt${overdueCount > 0 ? `, ${overdueCount} offen` : ''}` : `${days} Tage`
               return (
-                <div key={key} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', opacity: allDone ? 0.5 : 1 }}>
+                <div key={key} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', opacity: allDone ? 0.5 : 1, borderLeft: overdueCount > 0 ? '4px solid #E67E22' : allDone ? '4px solid var(--sage)' : undefined }}>
                   <div onClick={() => toggleDate(key)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                     <div>
-                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15, textDecoration: allDone ? 'line-through' : 'none' }}>{fmtDate(block.fromDate)} – {fmtDate(block.toDate)} · {hm(block.zeit_von)}–{hm(block.zeit_bis)}</div>
-                      <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(block.client_id)}{block.ort ? ` · ${block.ort}` : ''} · {doneCount > 0 ? `${doneCount}/${days} erledigt` : `${days} Tage`}</div>
+                      <div style={{ fontWeight: 600, color: overdueCount > 0 ? '#E67E22' : 'var(--dark)', fontSize: 15, textDecoration: allDone ? 'line-through' : 'none' }}>{fmtDate(block.fromDate)} – {fmtDate(block.toDate)} · {hm(block.zeit_von)}–{hm(block.zeit_bis)}</div>
+                      <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(block.client_id)}{block.ort ? ` · ${block.ort}` : ''} · {statusText}</div>
                     </div>
                     <span style={{ color: 'var(--rose)', fontSize: 14, flexShrink: 0, marginLeft: 10 }}>{expanded ? '▲' : '▼'}</span>
                   </div>
@@ -737,9 +736,11 @@ export default function AdminEinsatzplan() {
                     <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
                       {block.entries.map(e => {
                         const done = isCompleted(e)
+                        const past = e.datum < todayStr()
+                        const overdue = past && !done
                         return (
                           <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
-                            <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)}{done ? ' ✓' : ''}</div>
+                            <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)}{done ? ' ✓' : overdue ? ' ⚠' : ''}</div>
                             <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
                           </div>
                         )
@@ -752,12 +753,16 @@ export default function AdminEinsatzplan() {
             // kind === 'day': multiple entries on same day
             const { datum, entries: dayEntries } = block
             const expanded = expandedDates.has(datum)
+            const dayPast = datum < todayStr()
+            const dayDoneCount = dayEntries.filter(e => isCompleted(e)).length
+            const dayAllDone = dayDoneCount === dayEntries.length
+            const dayOverdue = dayPast && !dayAllDone
             return (
-              <div key={datum} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+              <div key={datum} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', opacity: dayAllDone ? 0.5 : 1, borderLeft: dayOverdue ? '4px solid #E67E22' : dayAllDone ? '4px solid var(--sage)' : undefined }}>
                 <div onClick={() => toggleDate(datum)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(datum)}</div>
+                  <div style={{ fontWeight: 600, color: dayOverdue ? '#E67E22' : 'var(--dark)', fontSize: 15, textDecoration: dayAllDone ? 'line-through' : 'none' }}>{fmtDate(datum)}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, color: 'var(--mid)' }}>{dayEntries.length} Termine</span>
+                    <span style={{ fontSize: 13, color: 'var(--mid)' }}>{dayEntries.length} Termine{dayDoneCount > 0 ? ` (${dayDoneCount} ✓)` : ''}</span>
                     <span style={{ color: 'var(--rose)', fontSize: 14 }}>{expanded ? '▲' : '▼'}</span>
                   </div>
                 </div>
@@ -765,10 +770,12 @@ export default function AdminEinsatzplan() {
                   <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
                     {dayEntries.map(e => {
                       const done = isCompleted(e)
+                      const ePast = e.datum < todayStr()
+                      const eOverdue = ePast && !done
                       return (
                         <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
                           <div>
-                            <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}{done ? ' ✓' : ''}</div>
+                            <div style={{ fontWeight: 600, color: eOverdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}{done ? ' ✓' : eOverdue ? ' ⚠' : ''}</div>
                             <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
                           </div>
                           <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
