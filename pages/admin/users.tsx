@@ -104,6 +104,19 @@ export default function AdminUsers() {
     await load()
   }
 
+  async function invite(c: Caregiver) {
+    if (!c.email) return
+    if (!confirm(`Zugangsdaten an ${c.email} senden?`)) return
+    const { data: { session } } = await getSupabase().auth.getSession()
+    const res = await fetch('/api/admin/invite-caregiver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ email: c.email, name: c.name }),
+    })
+    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Fehler: ' + (j.error || res.statusText)); return }
+    alert(`Zugangsdaten wurden an ${c.email} gesendet.`)
+  }
+
   async function loadFiles(id: string) {
     const { data, error } = await getSupabase().storage.from('caregiver-files').list(id)
     if (error) { alert('Dateien konnten nicht geladen werden: ' + error.message); return }
@@ -332,6 +345,7 @@ export default function AdminUsers() {
                 <button onClick={() => edit(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
                 <button onClick={() => toggleFiles(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: filesOpenId === c.id ? 'var(--cream)' : '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Dateien</button>
                 <button onClick={() => setPrintCard(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte</button>
+                {c.email && <button onClick={() => invite(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 13, cursor: 'pointer' }}>Einladen</button>}
                 <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
               </div>
             </div>
