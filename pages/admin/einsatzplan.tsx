@@ -823,7 +823,7 @@ export default function AdminEinsatzplan() {
                             <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
                           </div>
                           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                            {eOverdue && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
+                            {!done && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
                             <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
                           </div>
                         </div>
