@@ -28,7 +28,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { data: signupData, error: signupError } = await signupClient.auth.signUp({
     email,
     password: tempPassword,
-    options: { data: { full_name: name, must_change_password: true } },
+    options: {
+      data: { full_name: name, must_change_password: true },
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'}/auth/callback`,
+    },
   })
   if (signupError) return res.status(400).json({ error: signupError.message })
 
