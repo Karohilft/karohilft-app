@@ -233,17 +233,27 @@ export default function AdminEinsatzplan() {
         const { error } = await getSupabase().from('schedule').update({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum: openForm.datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }).eq('id', editingOpenId)
         if (error) throw new Error(error.message)
       } else {
-        const rows = openDates.map(datum => ({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }))
-        const { error } = await getSupabase().from('schedule').insert(rows)
-        if (error) throw new Error(error.message)
+        const { data: existing } = await getSupabase().from('schedule').select('datum,zeit_von,zeit_bis,client_id').eq('client_id', openForm.client_id).in('datum', openDates)
+        const isDup = (d: string, von: string, bis: string) => (existing || []).some(e => e.datum === d && e.zeit_von === von && e.zeit_bis === bis)
+        const rows = openDates.filter(d => !isDup(d, openForm.zeit_von, openForm.zeit_bis)).map(datum => ({ caregiver_id: openForm.caregiver_id || null, client_id: openForm.client_id, datum, zeit_von: openForm.zeit_von, zeit_bis: openForm.zeit_bis, ort: openForm.ort || null }))
+        if (rows.length > 0) {
+          const { error } = await getSupabase().from('schedule').insert(rows)
+          if (error) throw new Error(error.message)
+        }
+        const skipped = openDates.length - rows.length
+        if (skipped > 0 && rows.length === 0) { alert(`Alle ${skipped} Termine existieren bereits.`); setSavingOpen(false); return }
       }
 
       if (!editingOpenId && openExtraSlots.length > 0) {
         const extras = openExtraSlots.filter(s => s.client_id && s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
         if (extras.length > 0) {
-          const extraRows = openDates.flatMap(datum => extras.map(s => ({ caregiver_id: openForm.caregiver_id || null, client_id: s.client_id || openForm.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
-          const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
-          if (e2) throw new Error(e2.message)
+          const { data: existingExtra } = await getSupabase().from('schedule').select('datum,zeit_von,zeit_bis,client_id').eq('client_id', openForm.client_id).in('datum', openDates)
+          const isDupExtra = (d: string, von: string, bis: string, cid: string) => (existingExtra || []).some(e => e.datum === d && e.zeit_von === von && e.zeit_bis === bis && e.client_id === cid)
+          const extraRows = openDates.flatMap(datum => extras.filter(s => !isDupExtra(datum, s.zeit_von, s.zeit_bis, s.client_id || openForm.client_id)).map(s => ({ caregiver_id: openForm.caregiver_id || null, client_id: s.client_id || openForm.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+          if (extraRows.length > 0) {
+            const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
+            if (e2) throw new Error(e2.message)
+          }
         }
       }
 
@@ -372,17 +382,27 @@ export default function AdminEinsatzplan() {
         const { error } = await getSupabase().from('schedule').update({ caregiver_id: selected.id, client_id: form.client_id, datum: form.datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }).eq('id', editingId)
         if (error) throw new Error(error.message)
       } else {
-        const rows = dates.map(datum => ({ caregiver_id: selected.id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }))
-        const { error } = await getSupabase().from('schedule').insert(rows)
-        if (error) throw new Error(error.message)
+        const { data: existing } = await getSupabase().from('schedule').select('datum,zeit_von,zeit_bis,client_id').eq('caregiver_id', selected.id).in('datum', dates)
+        const isDup = (d: string, von: string, bis: string, cid: string) => (existing || []).some(e => e.datum === d && e.zeit_von === von && e.zeit_bis === bis && e.client_id === cid)
+        const rows = dates.filter(d => !isDup(d, form.zeit_von, form.zeit_bis, form.client_id)).map(datum => ({ caregiver_id: selected.id, client_id: form.client_id, datum, zeit_von: form.zeit_von, zeit_bis: form.zeit_bis, ort: form.ort || null }))
+        if (rows.length > 0) {
+          const { error } = await getSupabase().from('schedule').insert(rows)
+          if (error) throw new Error(error.message)
+        }
+        const skipped = dates.length - rows.length
+        if (skipped > 0 && rows.length === 0) { alert(`Alle ${skipped} Termine existieren bereits.`); setSaving(false); return }
       }
 
       if (!editingId && extraSlots.length > 0) {
         const extras = extraSlots.filter(s => s.zeit_von && s.zeit_bis && s.zeit_von < s.zeit_bis)
         if (extras.length > 0) {
-          const extraRows = dates.flatMap(datum => extras.map(s => ({ caregiver_id: selected.id, client_id: s.client_id || form.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
-          const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
-          if (e2) throw new Error(e2.message)
+          const { data: existingExtra } = await getSupabase().from('schedule').select('datum,zeit_von,zeit_bis,client_id').eq('caregiver_id', selected.id).in('datum', dates)
+          const isDupExtra = (d: string, von: string, bis: string, cid: string) => (existingExtra || []).some(e => e.datum === d && e.zeit_von === von && e.zeit_bis === bis && e.client_id === cid)
+          const extraRows = dates.flatMap(datum => extras.filter(s => !isDupExtra(datum, s.zeit_von, s.zeit_bis, s.client_id || form.client_id)).map(s => ({ caregiver_id: selected.id, client_id: s.client_id || form.client_id, datum, zeit_von: s.zeit_von, zeit_bis: s.zeit_bis, ort: s.ort || null })))
+          if (extraRows.length > 0) {
+            const { error: e2 } = await getSupabase().from('schedule').insert(extraRows)
+            if (e2) throw new Error(e2.message)
+          }
         }
       }
 
