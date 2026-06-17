@@ -22,6 +22,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { id, ...payload } = req.body
   if (!id) return res.status(400).json({ error: 'ID fehlt' })
 
+  if (typeof payload.languages === 'string') {
+    payload.languages = payload.languages.split(',').map((s: string) => s.trim()).filter(Boolean)
+  }
+
   const { error: updateError } = await db.from('caregivers').update(payload).eq('id', id)
   if (updateError) return res.status(400).json({ error: updateError.message })
 

@@ -35,7 +35,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { error: insertError } = await db.from('caregivers').insert({
     name, email, phone: phone || null, role: role || 'user',
     card_type: card_type || 'team',
-    birthdate: birthdate || null, languages: languages || null, notes: notes || null,
+    birthdate: birthdate || null,
+    languages: languages ? (typeof languages === 'string' ? languages.split(',').map((s: string) => s.trim()).filter(Boolean) : languages) : null,
+    notes: notes || null,
   })
   if (insertError) {
     if (invited.user) await db.auth.admin.deleteUser(invited.user.id)

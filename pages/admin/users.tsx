@@ -71,7 +71,7 @@ export default function AdminUsers() {
   }
 
   function edit(c: Caregiver) {
-    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, card_type: c.card_type || 'team', birthdate: c.birthdate || '', languages: c.languages || '', notes: c.notes || '' })
+    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, card_type: c.card_type || 'team', birthdate: c.birthdate || '', languages: Array.isArray(c.languages) ? c.languages.join(', ') : (c.languages || ''), notes: c.notes || '' })
     setEditingId(c.id)
     setShowForm(true)
   }
@@ -339,7 +339,7 @@ export default function AdminUsers() {
                   {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
                   {formatCardNumber(c.card_number)}
                 </div>
-                {c.languages && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>Sprachen: {c.languages}</div>}
+                {c.languages && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>Sprachen: {Array.isArray(c.languages) ? c.languages.join(', ') : c.languages}</div>}
                 {c.notes && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{c.notes}</div>}
               </div>
               <div className="cg-btns" style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
