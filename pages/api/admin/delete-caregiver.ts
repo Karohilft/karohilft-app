@@ -28,6 +28,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { data: target } = await db.from('caregivers').select('email').eq('id', id).single()
 
+  await db.from('schedule').update({ caregiver_id: null }).eq('caregiver_id', id)
+
   const { error: delError } = await db.from('caregivers').delete().eq('id', id)
   if (delError) return res.status(500).json({ error: delError.message })
 

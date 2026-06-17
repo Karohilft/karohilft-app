@@ -79,7 +79,7 @@ export default function AdminUsers() {
   }
 
   async function del(id: string) {
-    if (!confirm('Betreuer löschen? Geplante Einsätze im Stundenplan werden ebenfalls gelöscht und der Login-Zugang wird entfernt. Bereits erfasste Tätigkeitsnachweise bleiben aus Dokumentationspflicht erhalten.')) return
+    if (!confirm('Betreuer löschen? Geplante Einsätze in der Einsatzplanung werden wieder als unbesetzt angezeigt und der Login-Zugang wird entfernt. Bereits erfasste Tätigkeitsnachweise bleiben erhalten.')) return
     const { data: { session } } = await getSupabase().auth.getSession()
     const res = await fetch('/api/admin/delete-caregiver', {
       method: 'POST',
