@@ -10,16 +10,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { name, email, phone, role, card_type, birthdate, languages, notes } = req.body
   if (!name || !email) return res.status(400).json({ error: 'Name und E-Mail sind erforderlich' })
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  const { data: { user }, error } = await supabase.auth.getUser(token)
-  if (error || !user) return res.status(401).json({ error: 'Ungültiger Token' })
-
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceKey) return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY nicht konfiguriert' })
+
+  const anonClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  const { data: { user }, error } = await anonClient.auth.getUser(token)
+  if (error || !user) return res.status(401).json({ error: 'Ungültiger Token' })
 
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
 
@@ -28,13 +24,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const tempPassword = Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4)
 
-  const { data: created, error: createError } = await db.auth.admin.createUser({
+  const signupClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  const { data: signupData, error: signupError } = await signupClient.auth.signUp({
     email,
     password: tempPassword,
-    email_confirm: true,
-    user_metadata: { full_name: name, must_change_password: true },
+    options: { data: { full_name: name, must_change_password: true } },
   })
-  if (createError) return res.status(400).json({ error: createError.message })
+  if (signupError) return res.status(400).json({ error: signupError.message })
 
   const { error: insertError } = await db.from('caregivers').insert({
     name, email, phone: phone || null, role: role || 'user',
@@ -44,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     notes: notes || null,
   })
   if (insertError) {
-    if (created.user) await db.auth.admin.deleteUser(created.user.id)
+    if (signupData.user) await db.auth.admin.deleteUser(signupData.user.id)
     return res.status(400).json({ error: insertError.message })
   }
 
