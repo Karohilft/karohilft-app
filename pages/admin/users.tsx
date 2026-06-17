@@ -61,7 +61,7 @@ export default function AdminUsers() {
       })
       const j = await res.json().catch(() => ({}))
       if (!res.ok) { alert('Anlegen fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
-      alert(`Betreuer angelegt!\n\nZugangsdaten für ${form.email}:\nPasswort: ${j.tempPassword}\n\nBitte dem Betreuer mitteilen. Beim ersten Login wird er aufgefordert, das Passwort zu ändern.`)
+      alert(`Betreuer angelegt!\n\nZugangsdaten wurden an ${form.email} gesendet.`)
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }
