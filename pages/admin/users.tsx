@@ -44,18 +44,22 @@ export default function AdminUsers() {
     if (!form.name) return
     setSaving(true)
     const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, card_type: form.card_type, birthdate: form.birthdate || null, languages: form.languages || null, notes: form.notes || null }
+    const { data: { session } } = await getSupabase().auth.getSession()
     if (editingId) {
-      await getSupabase().from('caregivers').update(payload).eq('id', editingId)
+      const res = await fetch('/api/admin/update-caregiver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ id: editingId, ...payload }),
+      })
+      if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Speichern fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
     } else if (form.email) {
-      const tempPassword = Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4)
-      const { data: { session } } = await getSupabase().auth.getSession()
       const res = await fetch('/api/admin/create-caregiver', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ ...payload, password: tempPassword }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Anlegen fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
-      alert(`Betreuer angelegt!\n\nEinmalpasswort für ${form.email}:\n${tempPassword}\n\nBeim ersten Login muss ein neues Passwort vergeben werden.`)
+      alert(`Betreuer angelegt!\n\nEine Einladungs-E-Mail wurde an ${form.email} gesendet.\nDer Betreuer kann damit ein Passwort setzen und sich einloggen.`)
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }
