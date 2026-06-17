@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { formatCardNumber } from '../../lib/cardNumber'
 
-type Result = { found: true; name: string; card_number: number; type: string; role: string } | { found: false }
+type Result = { found: true; name: string; card_number: number; birthdate: string | null; type: string; role: string } | { found: false }
 
 export default function VerifyCard() {
   const router = useRouter()
@@ -22,7 +22,7 @@ export default function VerifyCard() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--cream, #FAF5EE)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
-        <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 120, margin: '0 auto 24px', display: 'block' }} />
+        <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 160, margin: '0 auto 24px', display: 'block' }} />
 
         {loading && <p style={{ color: '#8C857D', fontSize: 15 }}>Wird überprüft…</p>}
 
@@ -31,6 +31,7 @@ export default function VerifyCard() {
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(145deg, #4CAF50, #388E3C)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28 }}>✓</div>
             <h1 style={{ fontFamily: 'var(--font-display, "DM Serif Display", serif)', fontWeight: 400, fontSize: 24, color: '#1C1814', margin: '0 0 4px' }}>{result.name}</h1>
             <p style={{ color: '#8C857D', fontSize: 14, margin: '0 0 4px' }}>{result.type}</p>
+            {result.birthdate && <p style={{ color: '#8C857D', fontSize: 13, margin: '0 0 4px' }}>geb. {new Date(result.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>}
             <p style={{ color: '#8C857D', fontSize: 13, margin: '0 0 20px' }}>{formatCardNumber(result.card_number)}</p>
             <div style={{ display: 'inline-block', padding: '8px 20px', borderRadius: 20, background: 'rgba(76,175,80,.1)', color: '#388E3C', fontWeight: 600, fontSize: 14 }}>
               Aktiv ✅
