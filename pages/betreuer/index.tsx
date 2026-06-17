@@ -64,7 +64,7 @@ export default function BetreuerHome() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 6px' }}>
             Hallo{name ? `, ${name.split(' ')[0]}` : ''}!
           </h1>
-          <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Schau in deine Tour für deine nächsten Termine.</p>
+          <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Deine heutige Tour auf einen Blick.</p>
         </div>
 
         {/* QR-Scanner ausgeblendet – als Backup behalten */}
