@@ -126,14 +126,49 @@ export default function AdminEinsatzplan() {
     return rules.filter(r => r.caregiver_id === selected.id)
   }, [rules, selected])
 
-  const myEntriesByDate = useMemo(() => {
-    const groups: { datum: string; entries: Entry[] }[] = []
-    for (const e of myEntries) {
-      const last = groups[groups.length - 1]
-      if (last && last.datum === e.datum) last.entries.push(e)
-      else groups.push({ datum: e.datum, entries: [e] })
+  type Block = { kind: 'single'; entry: Entry } | { kind: 'day'; datum: string; entries: Entry[] } | { kind: 'range'; fromDate: string; toDate: string; zeit_von: string; zeit_bis: string; client_id: string; ort: string | null; entries: Entry[] }
+
+  const myBlocks = useMemo(() => {
+    const blocks: Block[] = []
+    let i = 0
+    while (i < myEntries.length) {
+      const e = myEntries[i]
+      // Try to find a consecutive date range with same client + same time
+      let rangeEntries = [e]
+      let j = i + 1
+      while (j < myEntries.length) {
+        const next = myEntries[j]
+        const lastInRange = rangeEntries[rangeEntries.length - 1]
+        if (next.client_id === e.client_id && next.zeit_von === e.zeit_von && next.zeit_bis === e.zeit_bis && next.datum === addDays(lastInRange.datum, 1)) {
+          rangeEntries.push(next)
+          j++
+        } else if (next.datum === lastInRange.datum || next.datum === addDays(lastInRange.datum, 0)) {
+          // Same day, different entry — break range, handle as day group
+          break
+        } else {
+          break
+        }
+      }
+      if (rangeEntries.length >= 3) {
+        blocks.push({ kind: 'range', fromDate: rangeEntries[0].datum, toDate: rangeEntries[rangeEntries.length - 1].datum, zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, client_id: e.client_id, ort: e.ort, entries: rangeEntries })
+        i = j
+      } else {
+        // Group by date (may be single or multiple entries on same day)
+        const dayEntries = [myEntries[i]]
+        let k = i + 1
+        while (k < myEntries.length && myEntries[k].datum === myEntries[i].datum) {
+          dayEntries.push(myEntries[k])
+          k++
+        }
+        if (dayEntries.length === 1) {
+          blocks.push({ kind: 'single', entry: dayEntries[0] })
+        } else {
+          blocks.push({ kind: 'day', datum: dayEntries[0].datum, entries: dayEntries })
+        }
+        i = k
+      }
     }
-    return groups
+    return blocks
   }, [myEntries])
 
   const openEntries = useMemo(() => entries.filter(e => !e.caregiver_id), [entries])
@@ -738,13 +773,13 @@ export default function AdminEinsatzplan() {
         )}
 
         {myRules.length > 0 && <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Einzeltermine</h2>}
-        {myEntriesByDate.length === 0
+        {myBlocks.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Keine kommenden Einzeltermine.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Einsatz zuzuteilen.</span></div>
-          : myEntriesByDate.map(({ datum, entries: dayEntries }) => {
-            if (dayEntries.length === 1) {
-              const e = dayEntries[0]
+          : myBlocks.map((block, bi) => {
+            if (block.kind === 'single') {
+              const e = block.entry
               return (
-                <div key={datum} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                   <div>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
                     <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
@@ -753,6 +788,34 @@ export default function AdminEinsatzplan() {
                 </div>
               )
             }
+            if (block.kind === 'range') {
+              const key = `range-${block.fromDate}`
+              const expanded = expandedDates.has(key)
+              const days = block.entries.length
+              return (
+                <div key={key} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+                  <div onClick={() => toggleDate(key)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(block.fromDate)} – {fmtDate(block.toDate)} · {hm(block.zeit_von)}–{hm(block.zeit_bis)}</div>
+                      <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(block.client_id)}{block.ort ? ` · ${block.ort}` : ''} · {days} Tage</div>
+                    </div>
+                    <span style={{ color: 'var(--rose)', fontSize: 14, flexShrink: 0, marginLeft: 10 }}>{expanded ? '▲' : '▼'}</span>
+                  </div>
+                  {expanded && (
+                    <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
+                      {block.entries.map(e => (
+                        <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14 }}>{fmtDate(e.datum)}</div>
+                          <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            // kind === 'day': multiple entries on same day
+            const { datum, entries: dayEntries } = block
             const expanded = expandedDates.has(datum)
             return (
               <div key={datum} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
