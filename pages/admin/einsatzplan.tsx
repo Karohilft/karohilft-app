@@ -57,6 +57,11 @@ function addDays(dateStr: string, n: number) {
   return `${y}-${m}-${day}`
 }
 
+function mondayOfWeek(dateStr: string) {
+  const wd = weekdayOf(dateStr)
+  return addDays(dateStr, -wd)
+}
+
 function weekdaysLabel(weekdays: number[]) {
   return [...weekdays].sort().map(d => WEEKDAYS[d]).join(', ')
 }
@@ -68,6 +73,8 @@ export default function AdminEinsatzplan() {
   const [clients, setClients] = useState<Person[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
   const [rules, setRules] = useState<Rule[]>([])
+  type Activity = { caregiver_id: string; client_id: string; datum: string }
+  const [activities, setActivities] = useState<Activity[]>([])
   const [selected, setSelected] = useState<Person | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -90,16 +97,19 @@ export default function AdminEinsatzplan() {
   const [openExtraSlots, setOpenExtraSlots] = useState<ExtraSlot[]>([])
 
   async function load() {
-    const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }] = await Promise.all([
+    const weekStart = mondayOfWeek(todayStr())
+    const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }, { data: acts }] = await Promise.all([
       getSupabase().from('caregivers').select('id,name,absent').neq('role', 'admin').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
-      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id,cancelled_by,cancelled_at').gte('datum', todayStr()).order('datum').order('zeit_von'),
+      getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id,cancelled_by,cancelled_at').gte('datum', weekStart).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').order('zeit_von'),
+      getSupabase().from('activities').select('caregiver_id,client_id,datum').gte('datum', weekStart),
     ])
     setCaregivers((cgs as any) || [])
     setClients((cls as any) || [])
     setEntries((sched as any) || [])
     setRules((rls as any) || [])
+    setActivities((acts as any) || [])
     setLoading(false)
   }
 
@@ -112,6 +122,7 @@ export default function AdminEinsatzplan() {
 
   const clientName = (id: string) => clients.find(c => c.id === id)?.name || '–'
   const caregiverName = (id: string | null) => caregivers.find(c => c.id === id)?.name || '–'
+  const isCompleted = (e: Entry) => activities.some(a => a.caregiver_id === e.caregiver_id && a.client_id === e.client_id && a.datum === e.datum)
 
   const myEntries = useMemo(() => {
     if (!selected) return []
@@ -696,11 +707,12 @@ export default function AdminEinsatzplan() {
           : myBlocks.map((block, bi) => {
             if (block.kind === 'single') {
               const e = block.entry
+              const done = isCompleted(e)
               return (
-                <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1 }}>
                   <div>
-                    <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
-                    <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
+                    <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}{done ? ' ✓' : ''}</div>
                   </div>
                   <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
                 </div>
@@ -710,23 +722,28 @@ export default function AdminEinsatzplan() {
               const key = `range-${block.fromDate}`
               const expanded = expandedDates.has(key)
               const days = block.entries.length
+              const doneCount = block.entries.filter(e => isCompleted(e)).length
+              const allDone = doneCount === days
               return (
-                <div key={key} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+                <div key={key} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', opacity: allDone ? 0.5 : 1 }}>
                   <div onClick={() => toggleDate(key)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                     <div>
-                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{fmtDate(block.fromDate)} – {fmtDate(block.toDate)} · {hm(block.zeit_von)}–{hm(block.zeit_bis)}</div>
-                      <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(block.client_id)}{block.ort ? ` · ${block.ort}` : ''} · {days} Tage</div>
+                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15, textDecoration: allDone ? 'line-through' : 'none' }}>{fmtDate(block.fromDate)} – {fmtDate(block.toDate)} · {hm(block.zeit_von)}–{hm(block.zeit_bis)}</div>
+                      <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(block.client_id)}{block.ort ? ` · ${block.ort}` : ''} · {doneCount > 0 ? `${doneCount}/${days} erledigt` : `${days} Tage`}</div>
                     </div>
                     <span style={{ color: 'var(--rose)', fontSize: 14, flexShrink: 0, marginLeft: 10 }}>{expanded ? '▲' : '▼'}</span>
                   </div>
                   {expanded && (
                     <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
-                      {block.entries.map(e => (
-                        <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14 }}>{fmtDate(e.datum)}</div>
-                          <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
-                        </div>
-                      ))}
+                      {block.entries.map(e => {
+                        const done = isCompleted(e)
+                        return (
+                          <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
+                            <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)}{done ? ' ✓' : ''}</div>
+                            <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -746,15 +763,18 @@ export default function AdminEinsatzplan() {
                 </div>
                 {expanded && (
                   <div style={{ borderTop: '1px solid rgba(28,24,20,.08)' }}>
-                    {dayEntries.map(e => (
-                      <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)' }}>
-                        <div>
-                          <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14 }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
-                          <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
+                    {dayEntries.map(e => {
+                      const done = isCompleted(e)
+                      return (
+                        <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}{done ? ' ✓' : ''}</div>
+                            <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
+                          </div>
+                          <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
                         </div>
-                        <button onClick={ev => { ev.stopPropagation(); del(e.id) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
