@@ -331,7 +331,7 @@ export default function AdminUsers() {
                     title="In Einsatzplanung ein-/ausblenden"
                     style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.hidden ? '#e67e22' : 'transparent', color: c.hidden ? '#fff' : 'var(--mid)', border: c.hidden ? 'none' : '1.5px solid rgba(28,24,20,.12)', cursor: 'pointer', lineHeight: 1.4 }}
                   >{c.hidden ? 'Ausgeblendet' : 'Sichtbar'}</button>
-                  {c.email && <button onClick={() => invite(c)} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', cursor: 'pointer', lineHeight: 1.4 }}>Einladen</button>}
+                  {c.email && <button onClick={() => invite(c)} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 'var(--r-pill)', border: '1px solid var(--sage)', background: '#fff', color: 'var(--sage)', cursor: 'pointer', lineHeight: 1.3 }}>✉</button>}
                 </div>
                 {c.email && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{c.email}</div>}
                 {c.phone && <div style={{ fontSize: 14, color: 'var(--mid)' }}>{c.phone}</div>}
