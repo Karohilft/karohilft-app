@@ -33,6 +33,7 @@ export default function AdminDashboard() {
           <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Karohilft Verwaltung</p>
         </div>
 
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mid)', letterSpacing: '.5px', marginBottom: 8 }}>STUNDENBETREUUNG</div>
         <div style={{ display: 'grid', gap: 12 }}>
           {[{
             href: '/admin/uebersicht',
@@ -46,10 +47,6 @@ export default function AdminDashboard() {
             href: '/admin/plan-stunden',
             title: 'Tätigkeitsnachweise',
             desc: 'Bereits durchgeführte Einsätze einsehen & bearbeiten'
-          }, {
-            href: '/admin/livein',
-            title: '24h-Betreuung',
-            desc: 'Live-In Schichten planen, Klienten & Betreuer verwalten'
           }, {
             href: '/admin/clients',
             title: 'Klienten',
@@ -66,6 +63,13 @@ export default function AdminDashboard() {
             </button>
           ))}
         </div>
+
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mid)', letterSpacing: '.5px', marginTop: 28, marginBottom: 8 }}>24H-BETREUUNG</div>
+        <button onClick={() => router.push('/admin/livein')}
+          style={{ width: '100%', background: '#fff', border: '1.5px solid rgba(28,24,20,.08)', borderRadius: 'var(--r-md)', padding: '18px 20px', textAlign: 'left', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all .2s' }}>
+          <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--dark)', marginBottom: 3 }}>24h-Betreuung</div>
+          <div style={{ fontSize: 14, color: 'var(--mid)' }}>Live-In Schichten planen, Klienten & Betreuer verwalten</div>
+        </button>
 
         <button onClick={async () => { await getSupabase().auth.signOut(); router.replace('/login') }}
           style={{ marginTop: 24, width: '100%', padding: '14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: 'transparent', color: 'var(--mid)', fontSize: 15, cursor: 'pointer' }}>
