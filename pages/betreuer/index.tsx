@@ -64,7 +64,7 @@ export default function BetreuerHome() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 6px' }}>
             Hallo{name ? `, ${name.split(' ')[0]}` : ''}!
           </h1>
-          <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Schau in deinen Besuchsplan für deine nächsten Termine.</p>
+          <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Schau in deine Tour für deine nächsten Termine.</p>
         </div>
 
         {/* QR-Scanner ausgeblendet – als Backup behalten */}
@@ -88,7 +88,7 @@ export default function BetreuerHome() {
           onClick={() => router.push('/betreuer/plan')}
           style={{ marginTop: 10, width: '100%', padding: '13px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontWeight: 500, fontSize: 16, cursor: 'pointer' }}
         >
-          Besuchsplan
+          Meine Tour
         </button>
 
         <button
