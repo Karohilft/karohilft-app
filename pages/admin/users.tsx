@@ -113,8 +113,14 @@ export default function AdminUsers() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
       body: JSON.stringify({ email: c.email, name: c.name }),
     })
-    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Fehler: ' + (j.error || res.statusText)); return }
-    alert(`Zugangsdaten wurden an ${c.email} gesendet.`)
+    const j = await res.json().catch(() => ({}))
+    if (!res.ok) { alert('Fehler: ' + (j.error || res.statusText)); return }
+    if (j.link) {
+      const copied = await navigator.clipboard.writeText(j.link).then(() => true).catch(() => false)
+      alert(`Login-Link für ${c.name}:\n\n${j.link}\n\n${copied ? '(Link wurde in die Zwischenablage kopiert!)' : 'Bitte den Link kopieren und dem Betreuer senden.'}`)
+    } else {
+      alert(`Einladung an ${c.email} gesendet.`)
+    }
   }
 
   async function loadFiles(id: string) {

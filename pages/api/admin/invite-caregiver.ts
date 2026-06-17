@@ -25,20 +25,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { data: existing } = await db.auth.admin.listUsers()
   const existingUser = existing?.users?.find(u => u.email === email)
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'
+
   if (existingUser) {
-    const { error: resetError } = await db.auth.admin.generateLink({
+    const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
       type: 'magiclink',
       email,
-      options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'}/login` },
+      options: { redirectTo: `${siteUrl}/login` },
     })
-    if (resetError) return res.status(400).json({ error: resetError.message })
+    if (linkError) return res.status(400).json({ error: linkError.message })
+
+    const actionLink = linkData?.properties?.action_link
+    return res.status(200).json({ success: true, link: actionLink })
   } else {
-    const { error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
+    const { data: inviteData, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
       data: { full_name: name || '' },
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'}/login`,
+      redirectTo: `${siteUrl}/login`,
     })
     if (inviteError) return res.status(400).json({ error: inviteError.message })
-  }
 
-  return res.status(200).json({ success: true })
+    const { data: linkData } = await db.auth.admin.generateLink({
+      type: 'invite',
+      email,
+      options: { redirectTo: `${siteUrl}/login` },
+    })
+
+    const actionLink = linkData?.properties?.action_link
+    return res.status(200).json({ success: true, link: actionLink })
+  }
 }
