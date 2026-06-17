@@ -246,6 +246,13 @@ export default function AdminUsers() {
           </div>, document.body)}
         </>
       )}
+      <style>{`
+        @media (max-width: 600px) {
+          .cg-card-row { flex-direction: column !important; align-items: stretch !important; }
+          .cg-card-row .cg-btns { justify-content: flex-start !important; margin-top: 10px; }
+          .cg-card-row .cg-btns button { padding: 5px 10px !important; font-size: 12px !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, overflow: 'hidden' }}>
@@ -288,7 +295,7 @@ export default function AdminUsers() {
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Betreuer anzulegen.</span></div>
           : caregivers.map(c => (
             <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="cg-card-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</span>
@@ -317,7 +324,7 @@ export default function AdminUsers() {
                 {c.languages && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>Sprachen: {c.languages}</div>}
                 {c.notes && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{c.notes}</div>}
               </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+              <div className="cg-btns" style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
                 <button onClick={() => edit(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Bearbeiten</button>
                 <button onClick={() => toggleFiles(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: filesOpenId === c.id ? 'var(--cream)' : '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Dateien</button>
                 <button onClick={() => setPrintCard(c)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Karte</button>
