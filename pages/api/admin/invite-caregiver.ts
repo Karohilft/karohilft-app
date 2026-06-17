@@ -19,38 +19,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { data: caller } = await db.from('caregivers').select('role').eq('email', user.email).single()
   if (caller?.role !== 'admin') return res.status(403).json({ error: 'Kein Admin-Zugriff' })
 
-  const { email, name } = req.body
+  const { email } = req.body
   if (!email) return res.status(400).json({ error: 'E-Mail fehlt' })
-
-  const { data: existing } = await db.auth.admin.listUsers()
-  const existingUser = existing?.users?.find(u => u.email === email)
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'
 
-  if (existingUser) {
-    const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: { redirectTo: `${siteUrl}/login` },
-    })
-    if (linkError) return res.status(400).json({ error: linkError.message })
+  const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/update-password`,
+  })
+  if (resetError) return res.status(400).json({ error: resetError.message })
 
-    const actionLink = linkData?.properties?.action_link
-    return res.status(200).json({ success: true, link: actionLink })
-  } else {
-    const { data: inviteData, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
-      data: { full_name: name || '' },
-      redirectTo: `${siteUrl}/login`,
-    })
-    if (inviteError) return res.status(400).json({ error: inviteError.message })
-
-    const { data: linkData } = await db.auth.admin.generateLink({
-      type: 'invite',
-      email,
-      options: { redirectTo: `${siteUrl}/login` },
-    })
-
-    const actionLink = linkData?.properties?.action_link
-    return res.status(200).json({ success: true, link: actionLink })
-  }
+  return res.status(200).json({ success: true })
 }

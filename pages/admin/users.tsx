@@ -53,6 +53,7 @@ export default function AdminUsers() {
       })
       if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Speichern fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
     } else if (form.email) {
+      if (!confirm(`Zugangsdaten an ${form.email} senden?`)) { setSaving(false); return }
       const res = await fetch('/api/admin/create-caregiver', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
@@ -112,16 +113,10 @@ export default function AdminUsers() {
     const res = await fetch('/api/admin/invite-caregiver', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-      body: JSON.stringify({ email: c.email, name: c.name }),
+      body: JSON.stringify({ email: c.email }),
     })
-    const j = await res.json().catch(() => ({}))
-    if (!res.ok) { alert('Fehler: ' + (j.error || res.statusText)); return }
-    if (j.link) {
-      const copied = await navigator.clipboard.writeText(j.link).then(() => true).catch(() => false)
-      alert(`Login-Link für ${c.name}:\n\n${j.link}\n\n${copied ? '(Link wurde in die Zwischenablage kopiert!)' : 'Bitte den Link kopieren und dem Betreuer senden.'}`)
-    } else {
-      alert(`Einladung an ${c.email} gesendet.`)
-    }
+    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Fehler: ' + (j.error || res.statusText)); return }
+    alert(`Zugangsdaten an ${c.email} gesendet.`)
   }
 
   async function loadFiles(id: string) {
