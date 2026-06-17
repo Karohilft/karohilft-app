@@ -28,7 +28,7 @@ type Rule = {
   start_date: string
 }
 
-type Person = { id: string; name: string; absent?: boolean }
+type Person = { id: string; name: string; absent?: boolean; hidden?: boolean }
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
@@ -94,7 +94,7 @@ export default function AdminEinsatzplan() {
   async function load() {
     const past30 = addDays(todayStr(), -30)
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }, { data: acts }] = await Promise.all([
-      getSupabase().from('caregivers').select('id,name,absent').neq('role', 'admin').order('name'),
+      getSupabase().from('caregivers').select('id,name,absent,hidden').neq('role', 'admin').order('name'),
       getSupabase().from('clients').select('id,name').order('name'),
       getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id,cancelled_by,cancelled_at').gte('datum', past30).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').order('zeit_von'),
@@ -608,7 +608,7 @@ export default function AdminEinsatzplan() {
 
           {caregivers.length === 0
             ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Noch keine Betreuer angelegt.</div>
-            : caregivers.filter(c => c.name.toLowerCase().includes(caregiverSearch.toLowerCase())).map(c => {
+            : caregivers.filter(c => !c.hidden && c.name.toLowerCase().includes(caregiverSearch.toLowerCase())).map(c => {
               const count = entries.filter(e => e.caregiver_id === c.id && !isCompleted(e)).length + rules.filter(r => r.caregiver_id === c.id).length
               return (
                 <div key={c.id} onClick={() => setSelected(c)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>

@@ -5,7 +5,7 @@ import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 
-type Caregiver = { id: string; name: string; email: string; phone: string; role: string; card_type: string; birthdate: string | null; card_number: number | null; absent: boolean; languages: string | null; notes: string | null }
+type Caregiver = { id: string; name: string; email: string; phone: string; role: string; card_type: string; birthdate: string | null; card_number: number | null; absent: boolean; hidden: boolean; languages: string | null; notes: string | null }
 
 function validUntil(cardType?: string) {
   const d = new Date()
@@ -28,7 +28,7 @@ export default function AdminUsers() {
   const [uploading, setUploading] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,languages,notes').order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes').order('name')
     setCaregivers((data as Caregiver[]) || [])
     setLoading(false)
   }
@@ -92,6 +92,11 @@ export default function AdminUsers() {
 
   async function toggleAbsent(id: string, currentAbsent: boolean) {
     await getSupabase().from('caregivers').update({ absent: !currentAbsent }).eq('id', id)
+    await load()
+  }
+
+  async function toggleHidden(id: string, currentHidden: boolean) {
+    await getSupabase().from('caregivers').update({ hidden: !currentHidden }).eq('id', id)
     await load()
   }
 
@@ -297,6 +302,11 @@ export default function AdminUsers() {
                     title="Abwesenheit umschalten"
                     style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.absent ? 'var(--rose)' : 'transparent', color: c.absent ? '#fff' : 'var(--mid)', border: c.absent ? 'none' : '1.5px solid rgba(28,24,20,.12)', cursor: 'pointer', lineHeight: 1.4 }}
                   >{c.absent ? 'Abwesend' : 'Anwesend'}</button>
+                  <button
+                    onClick={() => toggleHidden(c.id, c.hidden)}
+                    title="In Einsatzplanung ein-/ausblenden"
+                    style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.hidden ? '#e67e22' : 'transparent', color: c.hidden ? '#fff' : 'var(--mid)', border: c.hidden ? 'none' : '1.5px solid rgba(28,24,20,.12)', cursor: 'pointer', lineHeight: 1.4 }}
+                  >{c.hidden ? 'Ausgeblendet' : 'Sichtbar'}</button>
                 </div>
                 {c.email && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{c.email}</div>}
                 {c.phone && <div style={{ fontSize: 14, color: 'var(--mid)' }}>{c.phone}</div>}
