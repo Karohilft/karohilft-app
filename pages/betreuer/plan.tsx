@@ -8,6 +8,8 @@ type Rule = { id: string; client_id: string; weekdays: number[]; zeit_von: strin
 type Client = { id: string; name: string }
 type Exception = { rule_id: string; datum: string }
 
+type Activity = { client_id: string; datum: string }
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -40,20 +42,23 @@ export default function BetreuerPlan() {
   const [caregiverId, setCaregiverId] = useState<string | null>(null)
   const [caregiverName, setCaregiverName] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [activities, setActivities] = useState<Activity[]>([])
 
   async function load(cgId: string) {
     const today = todayStr()
     const until = addDays(today, 13)
-    const [{ data: sched }, { data: rls }, { data: cls }, { data: exc }] = await Promise.all([
+    const [{ data: sched }, { data: rls }, { data: cls }, { data: exc }, { data: acts }] = await Promise.all([
       getSupabase().from('schedule').select('id,client_id,datum,zeit_von,zeit_bis,ort').eq('caregiver_id', cgId).gte('datum', today).lte('datum', until).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').eq('caregiver_id', cgId),
       getSupabase().from('clients').select('id,name'),
       getSupabase().from('schedule_exceptions').select('rule_id,datum'),
+      getSupabase().from('activities').select('client_id,datum').eq('caregiver_id', cgId).gte('datum', today).lte('datum', until),
     ])
     setEntries((sched as any) || [])
     setRules((rls as any) || [])
     setClients((cls as any) || [])
     setExceptions((exc as any) || [])
+    setActivities((acts as any) || [])
     setLoading(false)
   }
 
@@ -72,6 +77,7 @@ export default function BetreuerPlan() {
   if (loading) return <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'var(--mid)' }}>Lädt…</p></div>
 
   const clientName = (id: string) => clients.find(c => c.id === id)?.name || '–'
+  const isCompleted = (clientId: string, datum: string) => activities.some(a => a.client_id === clientId && a.datum === datum)
   const today = todayStr()
 
   type Item = { client_id: string; client: string; zeit_von: string; zeit_bis: string; ort: string | null; kind: 'schedule' | 'rule'; sourceId: string }
@@ -81,9 +87,11 @@ export default function BetreuerPlan() {
     const datum = addDays(today, i)
     const items: Item[] = []
     for (const e of entries.filter(e => e.datum === datum)) {
+      if (isCompleted(e.client_id, datum)) continue
       items.push({ client_id: e.client_id, client: clientName(e.client_id), zeit_von: e.zeit_von, zeit_bis: e.zeit_bis, ort: e.ort, kind: 'schedule', sourceId: e.id })
     }
     for (const r of rules.filter(r => r.start_date <= datum && r.weekdays.includes(weekdayOf(datum)) && !exceptions.some(ex => ex.rule_id === r.id && ex.datum === datum))) {
+      if (isCompleted(r.client_id, datum)) continue
       items.push({ client_id: r.client_id, client: clientName(r.client_id), zeit_von: r.zeit_von, zeit_bis: r.zeit_bis, ort: r.ort, kind: 'rule', sourceId: r.id })
     }
     items.sort((a, b) => a.zeit_von.localeCompare(b.zeit_von))
