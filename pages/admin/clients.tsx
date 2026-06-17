@@ -211,7 +211,7 @@ export default function AdminClients() {
                   {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)' }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>}
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
-                <QRCodeSVG value={`${BASE_URL}/eintrag?k=${printCard.id}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
@@ -247,7 +247,7 @@ export default function AdminClients() {
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600, marginTop: 2 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <div style={{ position: 'absolute', right: 20, bottom: 28 }}>
-                  <QRCodeSVG value={`${BASE_URL}/eintrag?k=${printCard.id}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                  <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
                 </div>
               </div>
             </div>

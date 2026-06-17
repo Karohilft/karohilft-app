@@ -48,7 +48,7 @@ export default function BetreuerHome() {
                   {birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(birthdate).toLocaleDateString('de-AT')}</div>}
                   {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--mid)' }}>{formatCardNumber(cardNumber)}</div>}
                 </div>
-                <QRCodeSVG value={`BEGIN:VCARD\nVERSION:3.0\nN:${name}\nORG:Karohilft\nTEL:${phone}\nEMAIL:${email}\nEND:VCARD`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(cardNumber)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
