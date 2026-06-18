@@ -291,7 +291,7 @@ export default function AdminLiveIn() {
     )
   }
 
-  function ClientFormFields({ editingId }: { editingId: string | null }) {
+  function clientFormFields(editingId: string | null) {
     return (
       <>
         <input placeholder="Name *" value={clientForm.name} onChange={e => setClientForm(f => ({ ...f, name: e.target.value }))} style={inp} />
@@ -318,7 +318,7 @@ export default function AdminLiveIn() {
     )
   }
 
-  function CaregiverFormFields({ editingId }: { editingId: string | null }) {
+  function caregiverFormFields(editingId: string | null) {
     return (
       <>
         <input placeholder="Name *" value={caregiverForm.name} onChange={e => setCaregiverForm(f => ({ ...f, name: e.target.value }))} style={inp} />
@@ -518,7 +518,7 @@ export default function AdminLiveIn() {
             {showNewClientForm && (
               <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)', display: 'grid', gap: 10 }}>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: '0 0 4px' }}>Neuer Klient</h3>
-                <ClientFormFields editingId={null} />
+                {clientFormFields(null)}
               </div>
             )}
             {clients.length === 0
@@ -537,7 +537,7 @@ export default function AdminLiveIn() {
                   </div>
                   {expandedClientId === c.id && (
                     <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
-                      <ClientFormFields editingId={c.id} />
+                      {clientFormFields(c.id)}
                     </div>
                   )}
                 </div>
@@ -555,7 +555,7 @@ export default function AdminLiveIn() {
             {showNewCaregiverForm && (
               <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)', display: 'grid', gap: 10 }}>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: '0 0 4px' }}>Neuer Betreuer</h3>
-                <CaregiverFormFields editingId={null} />
+                {caregiverFormFields(null)}
               </div>
             )}
             {caregivers.length === 0
@@ -580,7 +580,7 @@ export default function AdminLiveIn() {
                     </div>
                     {expandedCaregiverId === c.id && (
                       <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
-                        <CaregiverFormFields editingId={c.id} />
+                        {caregiverFormFields(c.id)}
                       </div>
                     )}
                   </div>
