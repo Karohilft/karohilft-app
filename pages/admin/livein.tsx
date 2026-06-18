@@ -140,10 +140,18 @@ export default function AdminLiveIn() {
     if (!shiftForm.client_id || !shiftForm.start_date) return
     setSavingShift(true)
     const payload = { client_id: shiftForm.client_id, caregiver_id: shiftForm.caregiver_id || null, start_date: shiftForm.start_date, end_date: shiftForm.end_date || null, notiz: shiftForm.notiz || null }
+    let error: any = null
     if (editingShiftId) {
-      await getSupabase().from('live_in_shifts').update(payload).eq('id', editingShiftId)
+      const res = await getSupabase().from('live_in_shifts').update(payload).eq('id', editingShiftId)
+      error = res.error
     } else {
-      await getSupabase().from('live_in_shifts').insert(payload)
+      const res = await getSupabase().from('live_in_shifts').insert(payload)
+      error = res.error
+    }
+    if (error) {
+      alert('Fehler beim Speichern: ' + error.message)
+      setSavingShift(false)
+      return
     }
     setShowShiftForm(false)
     setSavingShift(false)
