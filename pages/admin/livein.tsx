@@ -4,7 +4,7 @@ import { getSupabase } from '../../lib/supabase'
 
 type LiveInClient = {
   id: string; name: string; street: string | null; city: string | null
-  notes: string | null; haustier: boolean
+  notes: string | null; haustier: boolean; haustier_details: string | null; raucher: boolean; zweite_person: boolean
 }
 type LiveInCaregiver = {
   id: string; name: string; street: string | null; city: string | null
@@ -81,7 +81,7 @@ export default function AdminLiveIn() {
   // Client
   const [showNewClientForm, setShowNewClientForm] = useState(false)
   const [expandedClientId, setExpandedClientId] = useState<string | null>(null)
-  const [clientForm, setClientForm] = useState({ name: '', street: '', city: '', notes: '', haustier: false })
+  const [clientForm, setClientForm] = useState({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false })
   const [savingClient, setSavingClient] = useState(false)
   const [clientFiles, setClientFiles] = useState<{ name: string; path: string }[]>([])
   const [uploadingClient, setUploadingClient] = useState(false)
@@ -101,7 +101,7 @@ export default function AdminLiveIn() {
 
   async function load() {
     const [{ data: cls }, { data: cgs }, { data: sh }] = await Promise.all([
-      getSupabase().from('clients').select('id,name,street,city,notes,haustier').eq('live_in', true).order('name'),
+      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person').eq('live_in', true).order('name'),
       getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).order('name'),
       getSupabase().from('live_in_shifts').select('id,client_id,caregiver_id,start_date,end_date,notiz,abgerechnet,caregiver:caregivers(name),client:clients(name)').order('start_date', { ascending: false }),
     ])
@@ -164,7 +164,7 @@ export default function AdminLiveIn() {
 
   async function openClientExpand(c: LiveInClient) {
     if (expandedClientId === c.id) { setExpandedClientId(null); return }
-    setClientForm({ name: c.name, street: c.street || '', city: c.city || '', notes: c.notes || '', haustier: c.haustier })
+    setClientForm({ name: c.name, street: c.street || '', city: c.city || '', notes: c.notes || '', haustier: c.haustier, haustier_details: c.haustier_details || '', raucher: c.raucher, zweite_person: c.zweite_person })
     setExpandedClientId(c.id)
     setShowNewClientForm(false)
     setClientFiles(await loadEntityFiles('clients', c.id))
@@ -181,7 +181,7 @@ export default function AdminLiveIn() {
   async function saveClient(editingId: string | null) {
     if (!clientForm.name) return
     setSavingClient(true)
-    const payload = { name: clientForm.name, street: clientForm.street || null, city: clientForm.city || null, notes: clientForm.notes || null, haustier: clientForm.haustier, live_in: true }
+    const payload = { name: clientForm.name, street: clientForm.street || null, city: clientForm.city || null, notes: clientForm.notes || null, haustier: clientForm.haustier, haustier_details: clientForm.haustier_details || null, raucher: clientForm.raucher, zweite_person: clientForm.zweite_person, live_in: true }
     if (editingId) {
       await getSupabase().from('clients').update(payload).eq('id', editingId)
     } else {
@@ -189,7 +189,7 @@ export default function AdminLiveIn() {
     }
     setExpandedClientId(null)
     setShowNewClientForm(false)
-    setClientForm({ name: '', street: '', city: '', notes: '', haustier: false })
+    setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false })
     setSavingClient(false)
     await load()
   }
@@ -301,6 +301,11 @@ export default function AdminLiveIn() {
         <div>
           <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 8 }}>Eigenschaften</div>
           <Toggle label="Haustier vorhanden" checked={clientForm.haustier} onChange={v => setClientForm(f => ({ ...f, haustier: v }))} />
+          {clientForm.haustier && (
+            <input placeholder="Welches Tier? (z.B. Hund, Katze)" value={clientForm.haustier_details} onChange={e => setClientForm(f => ({ ...f, haustier_details: e.target.value }))} style={{ ...inp, marginTop: 6, marginBottom: 4 }} />
+          )}
+          <Toggle label="Raucher" checked={clientForm.raucher} onChange={v => setClientForm(f => ({ ...f, raucher: v }))} />
+          <Toggle label="Zweite Person im Haushalt" checked={clientForm.zweite_person} onChange={v => setClientForm(f => ({ ...f, zweite_person: v }))} />
         </div>
         {editingId && (
           <FileSection
@@ -311,7 +316,7 @@ export default function AdminLiveIn() {
           />
         )}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-          <button onClick={() => { setShowNewClientForm(false); setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false }) }} style={btnS}>Abbrechen</button>
+          <button onClick={() => { setShowNewClientForm(false); setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false }) }} style={btnS}>Abbrechen</button>
           <button onClick={() => saveClient(editingId)} disabled={savingClient || !clientForm.name} style={{ ...btnP, opacity: savingClient || !clientForm.name ? 0.6 : 1 }}>{savingClient ? 'Speichern…' : 'Speichern'}</button>
         </div>
       </>
@@ -513,7 +518,7 @@ export default function AdminLiveIn() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>24h-Klienten</h2>
-              <button onClick={() => { setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false }); setClientFiles([]); setShowNewClientForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
+              <button onClick={() => { setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false }); setClientFiles([]); setShowNewClientForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
             </div>
             {showNewClientForm && (
               <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)', display: 'grid', gap: 10 }}>
