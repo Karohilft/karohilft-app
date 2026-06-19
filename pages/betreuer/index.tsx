@@ -39,8 +39,8 @@ export default function BetreuerHome() {
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 20px', color: 'var(--dark)' }}>Mein Ausweis</h2>
             <div id="print-card" style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 40 }} />
-                <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>ID Card</span>
+                <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 48 }} />
+                <span style={{ fontSize: 9, color: '#B0A99F', letterSpacing: 1, textTransform: 'uppercase' }}>ID Card</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ marginBottom: 8 }}>
@@ -48,7 +48,7 @@ export default function BetreuerHome() {
                   {birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(birthdate).toLocaleDateString('de-AT')}</div>}
                   {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600 }}>{formatCardNumber(cardNumber)}</div>}
                 </div>
-                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(cardNumber)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(cardNumber)}`} size={72} bgColor="transparent" fgColor="#1C1814" imageSettings={{ src: '/karohilft-logo-rund.png', height: 16, width: 16, excavate: true }} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>

@@ -203,8 +203,8 @@ export default function AdminClients() {
             {/* Card preview – CR80 ratio 85.6:54 */}
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 40 }} />
-                <span style={{ fontSize: 10, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>ID Card</span>
+                <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 48 }} />
+                <span style={{ fontSize: 9, color: '#B0A99F', letterSpacing: 1, textTransform: 'uppercase' }}>ID Card</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div style={{ marginBottom: 8 }}>
@@ -212,7 +212,7 @@ export default function AdminClients() {
                   {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)' }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>}
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
-                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" imageSettings={{ src: '/karohilft-logo-rund.png', height: 16, width: 16, excavate: true }} />
               </div>
             </div>
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
@@ -239,10 +239,10 @@ export default function AdminClients() {
           <div className="print-area" data-side={printSide}>
             <div className="print-page front">
               <div id="print-card" className="card-print front" style={{ position: 'relative', background: '#fff' }}>
-                <div style={{ position: 'absolute', left: 14, top: 16 }}>
-                  <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 47 }} />
+                <div style={{ position: 'absolute', left: 14, top: 14 }}>
+                  <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 55 }} />
                 </div>
-                <div style={{ position: 'absolute', right: 20, top: 22, fontSize: 10, color: 'var(--mid)', letterSpacing: 1, textTransform: 'uppercase' }}>
+                <div style={{ position: 'absolute', right: 20, top: 22, fontSize: 9, color: '#B0A99F', letterSpacing: 1, textTransform: 'uppercase' }}>
                   ID Card
                 </div>
                 <div style={{ position: 'absolute', left: 20, bottom: 28 }}>
@@ -251,7 +251,7 @@ export default function AdminClients() {
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600, marginTop: 2 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <div style={{ position: 'absolute', right: 20, bottom: 28 }}>
-                  <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                  <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" imageSettings={{ src: '/karohilft-logo-rund.png', height: 16, width: 16, excavate: true }} />
                 </div>
               </div>
             </div>
