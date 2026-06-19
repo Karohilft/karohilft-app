@@ -5,7 +5,7 @@ import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 
-type Caregiver = { id: string; name: string; email: string; phone: string; role: string; card_type: string; birthdate: string | null; card_number: number | null; absent: boolean; hidden: boolean; languages: string | null; notes: string | null }
+type Caregiver = { id: string; name: string; email: string; phone: string; role: string; card_type: string; birthdate: string | null; card_number: number | null; absent: boolean; hidden: boolean; languages: string | null; notes: string | null; verify_token: string | null }
 
 function validUntil(cardType?: string) {
   const d = new Date()
@@ -28,7 +28,7 @@ export default function AdminUsers() {
   const [uploading, setUploading] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes').order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').order('name')
     setCaregivers((data as Caregiver[]) || [])
     setLoading(false)
   }
@@ -205,7 +205,7 @@ export default function AdminUsers() {
                   {printCard.birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(printCard.birthdate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>}
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
-                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                <QRCodeSVG value={`https://app.karohilft.at/verify/${printCard.verify_token || formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
             <div style={{ width: 320, height: 202, border: '1px solid #e0ddd9', borderRadius: 12, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAF5EE 0%, #f5ede0 100%)', margin: '0 auto 20px' }}>
@@ -244,7 +244,7 @@ export default function AdminUsers() {
                   {printCard.card_number != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600, marginTop: 2 }}>{formatCardNumber(printCard.card_number)}</div>}
                 </div>
                 <div style={{ position: 'absolute', right: 20, bottom: 28 }}>
-                  <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                  <QRCodeSVG value={`https://app.karohilft.at/verify/${printCard.verify_token || formatCardNumber(printCard.card_number)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
                 </div>
               </div>
             </div>

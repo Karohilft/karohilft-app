@@ -11,6 +11,7 @@ export default function BetreuerHome() {
   const [email, setEmail] = useState('')
   const [cardNumber, setCardNumber] = useState<number | null>(null)
   const [birthdate, setBirthdate] = useState<string | null>(null)
+  const [verifyToken, setVerifyToken] = useState<string | null>(null)
   const [showCard, setShowCard] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -18,9 +19,9 @@ export default function BetreuerHome() {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       const sessionEmail = data.session.user.email
-      const { data: cg } = await getSupabase().from('caregivers').select('name,phone,email,birthdate,card_number').eq('email', sessionEmail).single()
+      const { data: cg } = await getSupabase().from('caregivers').select('name,phone,email,birthdate,card_number,verify_token').eq('email', sessionEmail).single()
       if (cg?.name) setName(cg.name)
-      if (cg) { setPhone(cg.phone || ''); setEmail(cg.email || ''); setBirthdate(cg.birthdate); setCardNumber(cg.card_number) }
+      if (cg) { setPhone(cg.phone || ''); setEmail(cg.email || ''); setBirthdate(cg.birthdate); setCardNumber(cg.card_number); setVerifyToken(cg.verify_token) }
       setLoading(false)
     })
   }, [router])
@@ -48,7 +49,7 @@ export default function BetreuerHome() {
                   {birthdate && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2 }}>geb. {new Date(birthdate).toLocaleDateString('de-AT')}</div>}
                   {cardNumber != null && <div style={{ fontSize: 12, color: 'var(--rose)', fontWeight: 600 }}>{formatCardNumber(cardNumber)}</div>}
                 </div>
-                <QRCodeSVG value={`https://app.karohilft.at/verify/${formatCardNumber(cardNumber)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
+                <QRCodeSVG value={`https://app.karohilft.at/verify/${verifyToken || formatCardNumber(cardNumber)}`} size={72} bgColor="transparent" fgColor="#1C1814" />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
