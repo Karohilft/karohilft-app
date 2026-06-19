@@ -51,7 +51,7 @@ export default function RegisterPage() {
         <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-md)', padding: '40px 32px 36px' }}>
 
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 100, height: 'auto', margin: '0 auto 4px', display: 'block' }} />
+            <img src="/karohilft-logo.svg" alt="Karohilft" style={{ width: 100, height: 'auto', margin: '0 auto 4px', display: 'block' }} />
           </div>
 
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', textAlign: 'center', margin: '0 0 4px' }}>Als Betreuer registrieren</h1>

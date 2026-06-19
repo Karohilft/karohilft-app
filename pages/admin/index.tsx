@@ -28,7 +28,7 @@ export default function AdminDashboard() {
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 32, paddingTop: 24 }}>
-          <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 120, marginBottom: 8 }} />
+          <img src="/karohilft-logo.svg" alt="Karohilft" style={{ width: 120, marginBottom: 8 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, color: 'var(--dark)', margin: '0 0 4px' }}>Admin-Bereich</h1>
           <p style={{ color: 'var(--mid)', fontSize: 15, margin: 0 }}>Karohilft Verwaltung</p>
         </div>

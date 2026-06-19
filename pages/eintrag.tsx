@@ -107,7 +107,7 @@ export default function EintragPage() {
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 16 }}>
-          <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 100, marginBottom: 8 }} />
+          <img src="/karohilft-logo.svg" alt="Karohilft" style={{ width: 100, marginBottom: 8 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--dark)', margin: '0 0 4px' }}>Einsatz eintragen</h1>
           <p style={{ color: 'var(--rose)', fontWeight: 500, margin: 0, fontSize: 15 }}>{today}</p>
         </div>

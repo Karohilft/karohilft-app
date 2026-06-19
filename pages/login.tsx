@@ -62,7 +62,7 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 420 }}>
         <div style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid var(--glass-border)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-md)', padding: '40px 32px 36px' }}>
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 160, margin: '0 auto 8px' }} />
+            <img src="/karohilft-logo.svg" alt="Karohilft" style={{ width: 160, margin: '0 auto 8px' }} />
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, color: 'var(--dark)', textAlign: 'center', margin: '0 0 28px' }}>Willkommen</h1>
           <form onSubmit={onSubmit} style={{ display: 'grid', gap: 14 }}>

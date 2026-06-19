@@ -123,7 +123,7 @@ export default function BetreuerEintrag() {
           {confirmDatum && (
             <button onClick={() => router.push('/betreuer/plan')} style={{ position: 'absolute', left: 0, top: 16, background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
           )}
-          <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 100, marginBottom: 8 }} />
+          <img src="/karohilft-logo.svg" alt="Karohilft" style={{ width: 100, marginBottom: 8 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 4px' }}>{confirmDatum ? 'Einsatz bestätigen' : 'Einsatz eintragen'}</h1>
           <p style={{ color: 'var(--rose)', fontWeight: 500, margin: 0 }}>{confirmDatum ? new Date(confirmDatum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : today}</p>
         </div>
