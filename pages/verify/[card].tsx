@@ -22,7 +22,7 @@ export default function VerifyCard() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--cream, #FAF5EE)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
-        <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 160, margin: '0 auto 24px', display: 'block' }} />
+        <img src="/karohilft-logo.svg" alt="Karohilft" style={{ width: 160, margin: '0 auto 24px', display: 'block' }} />
 
         {loading && <p style={{ color: '#8C857D', fontSize: 15 }}>Wird überprüft…</p>}
 

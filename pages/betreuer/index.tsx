@@ -59,7 +59,7 @@ export default function BetreuerHome() {
       )}
       <div style={{ maxWidth: 420, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', paddingTop: 32, marginBottom: 32 }}>
-          <img src="/karohilft-logo.png" alt="Karohilft" style={{ width: 160, margin: '0 auto 48px', display: 'block' }} />
+          <img src="/karohilft-logo.svg" alt="Karohilft" style={{ width: 160, margin: '0 auto 48px', display: 'block' }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--dark)', margin: '0 0 6px' }}>
             Hallo{name ? `, ${name.split(' ')[0]}` : ''}!
           </h1>
