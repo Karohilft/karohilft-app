@@ -22,12 +22,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { email } = req.body
   if (!email) return res.status(400).json({ error: 'E-Mail fehlt' })
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'
+  const tempPassword = Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4)
 
-  const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/update-password`,
-  })
-  if (resetError) return res.status(400).json({ error: resetError.message })
+  const { data: users } = await db.auth.admin.listUsers()
+  const existingUser = users?.users?.find((u: any) => u.email === email)
 
-  return res.status(200).json({ success: true })
+  if (existingUser) {
+    const { error: updateError } = await db.auth.admin.updateUserById(existingUser.id, {
+      password: tempPassword,
+      user_metadata: { must_change_password: true },
+    })
+    if (updateError) return res.status(400).json({ error: updateError.message })
+  } else {
+    const signupClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const { error: signupError } = await signupClient.auth.signUp({
+      email,
+      password: tempPassword,
+      options: {
+        data: { must_change_password: true },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://app.karohilft.at'}/auth/callback`,
+      },
+    })
+    if (signupError) return res.status(400).json({ error: signupError.message })
+  }
+
+  return res.status(200).json({ success: true, tempPassword })
 }

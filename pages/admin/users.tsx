@@ -23,6 +23,7 @@ export default function AdminUsers() {
   const [printCard, setPrintCard] = useState<Caregiver | null>(null)
   const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [tempPw, setTempPw] = useState<{ email: string; password: string } | null>(null)
   const [filesOpenId, setFilesOpenId] = useState<string | null>(null)
   const [files, setFiles] = useState<{ name: string }[]>([])
   const [uploading, setUploading] = useState(false)
@@ -61,7 +62,7 @@ export default function AdminUsers() {
       })
       const j = await res.json().catch(() => ({}))
       if (!res.ok) { alert('Anlegen fehlgeschlagen: ' + (j.error || res.statusText)); setSaving(false); return }
-      alert(`Betreuer angelegt!\n\nZugangsdaten wurden an ${form.email} gesendet.`)
+      if (j.tempPassword) setTempPw({ email: form.email, password: j.tempPassword })
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }
@@ -115,8 +116,9 @@ export default function AdminUsers() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
       body: JSON.stringify({ email: c.email }),
     })
-    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Fehler: ' + (j.error || res.statusText)); return }
-    alert(`Zugangsdaten an ${c.email} gesendet.`)
+    const j = await res.json().catch(() => ({}))
+    if (!res.ok) { alert('Fehler: ' + (j.error || res.statusText)); return }
+    if (j.tempPassword) setTempPw({ email: c.email, password: j.tempPassword })
   }
 
   async function loadFiles(id: string) {
@@ -156,6 +158,24 @@ export default function AdminUsers() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
+      {tempPw && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 420, width: '100%' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 22, margin: '0 0 16px', color: 'var(--dark)' }}>Zugangsdaten</h2>
+            <div style={{ background: 'var(--cream)', borderRadius: 'var(--r-md)', padding: '16px 20px', marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 4 }}>E-Mail</div>
+              <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--dark)', wordBreak: 'break-all' }}>{tempPw.email}</div>
+              <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 4, marginTop: 12 }}>Einmal-Passwort</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--rose)', letterSpacing: 2, fontFamily: 'monospace' }}>{tempPw.password}</div>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--mid)', margin: '0 0 16px' }}>Der Betreuer wird beim ersten Login aufgefordert, ein neues Passwort zu setzen.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => { navigator.clipboard.writeText(`E-Mail: ${tempPw.email}\nPasswort: ${tempPw.password}`); alert('In Zwischenablage kopiert!') }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--rose)', background: '#fff', color: 'var(--rose)', fontWeight: 500, cursor: 'pointer' }}>Kopieren</button>
+              <button onClick={() => setTempPw(null)} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer' }}>Schließen</button>
+            </div>
+          </div>
+        </div>
+      )}
       {printCard && (
         <>
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
