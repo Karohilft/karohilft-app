@@ -87,6 +87,7 @@ export default function AdminEinsatzplan() {
   const [openFilterDays, setOpenFilterDays] = useState<number[]>([])
   const [caregiverSearch, setCaregiverSearch] = useState('')
   const [showFutureOpen, setShowFutureOpen] = useState(false)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
   type ExtraSlot = { client_id: string; zeit_von: string; zeit_bis: string; ort: string }
   const [extraSlots, setExtraSlots] = useState<ExtraSlot[]>([])
   const [openExtraSlots, setOpenExtraSlots] = useState<ExtraSlot[]>([])
@@ -431,6 +432,18 @@ export default function AdminEinsatzplan() {
     await load()
   }
 
+  async function delChecked() {
+    if (checkedIds.size === 0) return
+    if (!confirm(`${checkedIds.size} Termin(e) löschen?`)) return
+    await getSupabase().from('schedule').delete().in('id', Array.from(checkedIds))
+    setCheckedIds(new Set())
+    await load()
+  }
+
+  function toggleCheck(id: string) {
+    setCheckedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
+  }
+
   async function delRule(id: string) {
     if (!confirm('Festen Termin beenden?')) return
     await getSupabase().from('schedule_rules').delete().eq('id', id)
@@ -611,7 +624,7 @@ export default function AdminEinsatzplan() {
             : caregivers.filter(c => !c.hidden && c.name.toLowerCase().includes(caregiverSearch.toLowerCase())).map(c => {
               const count = entries.filter(e => e.caregiver_id === c.id && !isCompleted(e)).length + rules.filter(r => r.caregiver_id === c.id).length
               return (
-                <div key={c.id} onClick={() => setSelected(c)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                <div key={c.id} onClick={() => { setSelected(c); setCheckedIds(new Set()) }} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                   <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>{c.name}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {c.absent && <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 'var(--r-pill)', background: 'var(--rose)', color: '#fff' }}>abwesend</span>}
@@ -735,6 +748,26 @@ export default function AdminEinsatzplan() {
         )}
 
         {myRules.length > 0 && <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 17, color: 'var(--dark)', margin: '0 0 8px' }}>Einzeltermine</h2>}
+        {myBlocks.length > 0 && (() => {
+          const allIds = myBlocks.flatMap(b => b.kind === 'single' ? [b.entry.id] : b.entries.map(e => e.id))
+          const allChecked = allIds.length > 0 && allIds.every(id => checkedIds.has(id))
+          return (
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--mid)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={allChecked} onChange={() => {
+                  if (allChecked) setCheckedIds(new Set())
+                  else setCheckedIds(new Set(allIds))
+                }} />
+                Alle markieren
+              </label>
+              {checkedIds.size > 0 && (
+                <button onClick={delChecked} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid #c45a5a', background: '#fff', color: '#c45a5a', fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
+                  {checkedIds.size} markierte löschen
+                </button>
+              )}
+            </div>
+          )
+        })()}
         {myBlocks.length === 0
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Keine kommenden Einzeltermine.<br /><span style={{ fontSize: 14 }}>Klicke auf "+ Neu" um einen Einsatz zuzuteilen.</span></div>
           : myBlocks.map((block, bi) => {
@@ -744,7 +777,8 @@ export default function AdminEinsatzplan() {
               const past = e.datum <= todayStr()
               const overdue = past && !done
               return (
-                <div key={e.id} onClick={() => openEdit(e)} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1, borderLeft: overdue ? '4px solid #E67E22' : done ? '4px solid var(--sage)' : undefined }}>
+                <div key={e.id} onClick={() => openEdit(e)} style={{ background: checkedIds.has(e.id) ? 'rgba(196,90,90,.05)' : '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1, borderLeft: overdue ? '4px solid #E67E22' : done ? '4px solid var(--sage)' : undefined }}>
+                  <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ marginRight: 12, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 15, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
                     <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}{done ? ' ✓' : overdue ? ' – nicht abgeschlossen' : ''}</div>
@@ -780,7 +814,8 @@ export default function AdminEinsatzplan() {
                         const past = e.datum <= todayStr()
                         const overdue = past && !done
                         return (
-                          <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
+                          <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1, background: checkedIds.has(e.id) ? 'rgba(196,90,90,.05)' : undefined }}>
+                            <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ marginRight: 10, flexShrink: 0 }} />
                             <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none', flex: 1 }}>{fmtDate(e.datum)}{done ? ' ✓' : overdue ? ' ⚠' : ''}</div>
                             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                               {!done && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
@@ -817,7 +852,8 @@ export default function AdminEinsatzplan() {
                       const ePast = e.datum < todayStr()
                       const eOverdue = ePast && !done
                       return (
-                        <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1 }}>
+                        <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1, background: checkedIds.has(e.id) ? 'rgba(196,90,90,.05)' : undefined }}>
+                          <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ marginRight: 10, flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 600, color: eOverdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}{done ? ' ✓' : eOverdue ? ' ⚠' : ''}</div>
                             <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
