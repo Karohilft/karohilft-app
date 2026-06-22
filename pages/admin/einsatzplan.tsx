@@ -757,7 +757,7 @@ export default function AdminEinsatzplan() {
                 <input type="checkbox" checked={allChecked} onChange={() => {
                   if (allChecked) setCheckedIds(new Set())
                   else setCheckedIds(new Set(allIds))
-                }} />
+                }} style={{ width: 18, height: 18, flexShrink: 0, accentColor: 'var(--rose)' }} />
                 Alle markieren
               </label>
               {checkedIds.size > 0 && (
@@ -778,7 +778,7 @@ export default function AdminEinsatzplan() {
               const overdue = past && !done
               return (
                 <div key={e.id} onClick={() => openEdit(e)} style={{ background: checkedIds.has(e.id) ? 'rgba(196,90,90,.05)' : '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', opacity: done ? 0.5 : 1, borderLeft: overdue ? '4px solid #E67E22' : done ? '4px solid var(--sage)' : undefined }}>
-                  <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ marginRight: 12, flexShrink: 0 }} />
+                  <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ width: 18, height: 18, marginRight: 12, flexShrink: 0, accentColor: 'var(--rose)' }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 15, textDecoration: done ? 'line-through' : 'none' }}>{fmtDate(e.datum)} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
                     <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}{done ? ' ✓' : overdue ? ' – nicht abgeschlossen' : ''}</div>
@@ -815,7 +815,7 @@ export default function AdminEinsatzplan() {
                         const overdue = past && !done
                         return (
                           <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1, background: checkedIds.has(e.id) ? 'rgba(196,90,90,.05)' : undefined }}>
-                            <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ marginRight: 10, flexShrink: 0 }} />
+                            <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ width: 18, height: 18, marginRight: 10, flexShrink: 0, accentColor: 'var(--rose)' }} />
                             <div style={{ fontWeight: 600, color: overdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none', flex: 1 }}>{fmtDate(e.datum)}{done ? ' ✓' : overdue ? ' ⚠' : ''}</div>
                             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                               {!done && <button onClick={ev => { ev.stopPropagation(); adminComplete(e) }} style={{ padding: '3px 8px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--sage)', background: '#fff', color: 'var(--sage)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>Abschließen</button>}
@@ -853,7 +853,7 @@ export default function AdminEinsatzplan() {
                       const eOverdue = ePast && !done
                       return (
                         <div key={e.id} onClick={() => openEdit(e)} style={{ padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid rgba(28,24,20,.05)', opacity: done ? 0.5 : 1, background: checkedIds.has(e.id) ? 'rgba(196,90,90,.05)' : undefined }}>
-                          <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ marginRight: 10, flexShrink: 0 }} />
+                          <input type="checkbox" checked={checkedIds.has(e.id)} onChange={() => toggleCheck(e.id)} onClick={ev => ev.stopPropagation()} style={{ width: 18, height: 18, marginRight: 10, flexShrink: 0, accentColor: 'var(--rose)' }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 600, color: eOverdue ? '#E67E22' : 'var(--dark)', fontSize: 14, textDecoration: done ? 'line-through' : 'none' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}{done ? ' ✓' : eOverdue ? ' ⚠' : ''}</div>
                             <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{clientName(e.client_id)}{e.ort ? ` · ${e.ort}` : ''}</div>
