@@ -14,6 +14,7 @@ export default function BetreuerHome() {
   const [verifyToken, setVerifyToken] = useState<string | null>(null)
   const [showCard, setShowCard] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [pushStatus, setPushStatus] = useState<'idle'|'subscribed'|'denied'|'loading'>('idle')
 
   useEffect(() => {
     getSupabase().auth.getSession().then(async ({ data }) => {
@@ -23,6 +24,10 @@ export default function BetreuerHome() {
       if (cg?.name) setName(cg.name)
       if (cg) { setPhone(cg.phone || ''); setEmail(cg.email || ''); setBirthdate(cg.birthdate); setCardNumber(cg.card_number); setVerifyToken(cg.verify_token) }
       setLoading(false)
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') setPushStatus('subscribed')
+        else if (Notification.permission === 'denied') setPushStatus('denied')
+      }
     })
   }, [router])
 
@@ -90,6 +95,34 @@ export default function BetreuerHome() {
         >
           Meine Tour
         </button>
+
+        {pushStatus !== 'subscribed' && pushStatus !== 'denied' && 'Notification' in (typeof window !== 'undefined' ? window : {}) && (
+          <button
+            onClick={async () => {
+              setPushStatus('loading')
+              const perm = await Notification.requestPermission()
+              if (perm !== 'granted') { setPushStatus('denied'); return }
+              const reg = await navigator.serviceWorker.ready
+              const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+              })
+              const { data } = await getSupabase().auth.getSession()
+              await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscription: sub, caregiver_email: data.session?.user.email }),
+              })
+              setPushStatus('subscribed')
+            }}
+            style={{ marginTop: 10, width: '100%', padding: '13px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontWeight: 500, fontSize: 15, cursor: pushStatus==='loading' ? 'not-allowed' : 'pointer', opacity: pushStatus==='loading' ? 0.6 : 1 }}
+          >
+            {pushStatus === 'loading' ? 'Wird aktiviert…' : '🔔 Benachrichtigungen aktivieren'}
+          </button>
+        )}
+        {pushStatus === 'subscribed' && (
+          <div style={{ marginTop: 10, textAlign: 'center', fontSize: 13, color: 'var(--mid)' }}>✓ Benachrichtigungen aktiv</div>
+        )}
 
         <button
           onClick={async () => { await getSupabase().auth.signOut(); router.replace('/login') }}

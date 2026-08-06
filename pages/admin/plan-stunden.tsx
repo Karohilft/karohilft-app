@@ -113,6 +113,18 @@ export default function AdminStundenplan() {
       zeit_von: newForm.zeit_von,
       zeit_bis: newForm.zeit_bis,
     })
+    const cgName = caregiverOptions.find(o => o.id === newForm.caregiver_id)?.name || ''
+    const clName = clientOptions.find(o => o.id === newForm.client_id)?.name || ''
+    fetch('/api/push/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        caregiver_id: newForm.caregiver_id,
+        title: 'Neuer Einsatz eingetragen',
+        body: `${newForm.datum} · ${newForm.zeit_von}–${newForm.zeit_bis} bei ${clName}`,
+        url: '/betreuer/plan',
+      }),
+    }).catch(() => {})
     setNewForm({ caregiver_id: '', client_id: '', datum: '', zeit_von: '', zeit_bis: '' })
     setShowNew(false)
     setSaving(false)
