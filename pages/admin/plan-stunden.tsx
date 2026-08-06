@@ -4,6 +4,18 @@ import { getSupabase } from '../../lib/supabase'
 import TimeSelect from '../../components/TimeSelect'
 import { hm } from '../../lib/time'
 
+function startOfWeek(d: Date) {
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  const r = new Date(d); r.setDate(d.getDate() + diff); r.setHours(0,0,0,0); return r
+}
+function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+function toISO(d: Date) { return d.toISOString().slice(0,10) }
+const DAYS_DE = ['Mo','Di','Mi','Do','Fr','Sa','So']
+const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
+const CAL_COLORS = ['#f5a7b8','#a8d5ba','#a8c4e8','#f5d0a8','#c8a8e8','#a8e8d5','#e8c8a8']
+function nameColor(name: string) { let h = 0; for (let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))&0xffff; return CAL_COLORS[h%CAL_COLORS.length] }
+
 type Activity = {
   id: string
   datum: string
@@ -120,6 +132,9 @@ export default function AdminStundenplan() {
 
   const totalHours = filtered.reduce((s, e) => s + calcHours(e.zeit_von, e.zeit_bis), 0)
 
+  const [view, setView] = useState<'list'|'week'|'month'>('list')
+  const [anchor, setAnchor] = useState<Date>(() => new Date())
+
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   function toggleGroup(name: string) {
     setOpenGroups(prev => {
@@ -195,9 +210,98 @@ export default function AdminStundenplan() {
           </select>
         </div>
 
-        {filtered.length === 0
+        {/* View toggle */}
+        <div className="no-print" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {(['list','week','month'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)} style={{ padding: '6px 16px', borderRadius: 99, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)', background: view===v ? 'var(--rose)' : 'rgba(28,24,20,.08)', color: view===v ? '#fff' : 'var(--dark)', fontWeight: view===v ? 600 : 400 }}>
+              {v==='list' ? 'Liste' : v==='week' ? 'Woche' : 'Monat'}
+            </button>
+          ))}
+        </div>
+
+        {/* Week view */}
+        {view === 'week' && (() => {
+          const ws = startOfWeek(anchor)
+          const days = Array.from({length:7}, (_,i) => addDays(ws,i))
+          const label = `${ws.getDate()}. ${MONTHS_DE[ws.getMonth()]} – ${addDays(ws,6).getDate()}. ${MONTHS_DE[addDays(ws,6).getMonth()]} ${addDays(ws,6).getFullYear()}`
+          const today = toISO(new Date())
+          return (
+            <div className="no-print">
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+                <button onClick={() => setAnchor(a => addDays(a,-7))} style={{ background:'transparent', border:'none', color:'var(--rose)', fontSize:22, cursor:'pointer', padding:'4px 8px' }}>‹</button>
+                <span style={{ flex:1, textAlign:'center', fontSize:14, color:'var(--dark)', fontWeight:500 }}>{label}</span>
+                <button onClick={() => setAnchor(a => addDays(a,7))} style={{ background:'transparent', border:'none', color:'var(--rose)', fontSize:22, cursor:'pointer', padding:'4px 8px' }}>›</button>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:5 }}>
+                {days.map((day,i) => {
+                  const iso = toISO(day)
+                  const dayEntries = filtered.filter(e => e.datum === iso)
+                  const isToday = iso === today
+                  return (
+                    <div key={iso} style={{ background:'#fff', borderRadius:'var(--r-md)', padding:'8px 6px', minHeight:90, boxShadow:'var(--shadow-sm)', border: isToday ? '2px solid var(--rose)' : '2px solid transparent' }}>
+                      <div style={{ fontSize:11, fontWeight:600, color: isToday ? 'var(--rose)' : 'var(--mid)', textAlign:'center', marginBottom:5 }}>
+                        {DAYS_DE[i]}<br/><span style={{ fontSize:13, color: isToday ? 'var(--rose)' : 'var(--dark)' }}>{day.getDate()}</span>
+                      </div>
+                      {dayEntries.map(e => {
+                        const cgName = (e.caregiver as any)?.name || e.caregiver_name || '–'
+                        return (
+                          <div key={e.id} style={{ background: nameColor(cgName), borderRadius:5, padding:'3px 5px', fontSize:11, marginBottom:3, lineHeight:1.3 }}>
+                            <div style={{ fontWeight:600, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{cgName}</div>
+                            <div style={{ opacity:.75, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Month view */}
+        {view === 'month' && (() => {
+          const ms = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
+          const label = `${MONTHS_DE[ms.getMonth()]} ${ms.getFullYear()}`
+          const firstWd = (ms.getDay() + 6) % 7
+          const daysInMonth = new Date(ms.getFullYear(), ms.getMonth()+1, 0).getDate()
+          const today = toISO(new Date())
+          return (
+            <div className="no-print">
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+                <button onClick={() => setAnchor(a => new Date(a.getFullYear(), a.getMonth()-1, 1))} style={{ background:'transparent', border:'none', color:'var(--rose)', fontSize:22, cursor:'pointer', padding:'4px 8px' }}>‹</button>
+                <span style={{ flex:1, textAlign:'center', fontSize:14, color:'var(--dark)', fontWeight:500 }}>{label}</span>
+                <button onClick={() => setAnchor(a => new Date(a.getFullYear(), a.getMonth()+1, 1))} style={{ background:'transparent', border:'none', color:'var(--rose)', fontSize:22, cursor:'pointer', padding:'4px 8px' }}>›</button>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, marginBottom:3 }}>
+                {DAYS_DE.map(d => <div key={d} style={{ textAlign:'center', fontSize:11, fontWeight:600, color:'var(--mid)', padding:'3px 0' }}>{d}</div>)}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3 }}>
+                {Array.from({length:firstWd}).map((_,i) => <div key={'p'+i} />)}
+                {Array.from({length:daysInMonth}).map((_,i) => {
+                  const day = i+1
+                  const iso = `${ms.getFullYear()}-${String(ms.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                  const dayEntries = filtered.filter(e => e.datum === iso)
+                  const isToday = iso === today
+                  return (
+                    <div key={iso} style={{ background:'#fff', borderRadius:'var(--r-sm)', padding:'5px 5px 6px', minHeight:52, boxShadow:'var(--shadow-sm)', border: isToday ? '2px solid var(--rose)' : '2px solid transparent' }}>
+                      <div style={{ fontSize:11, fontWeight: isToday ? 700 : 400, color: isToday ? 'var(--rose)' : 'var(--dark)', textAlign:'right', marginBottom:3 }}>{day}</div>
+                      {dayEntries.slice(0,3).map(e => {
+                        const cgName = (e.caregiver as any)?.name || e.caregiver_name || '–'
+                        return <div key={e.id} style={{ height:5, borderRadius:3, background: nameColor(cgName), marginBottom:2 }} title={`${cgName} · ${hm(e.zeit_von)}–${hm(e.zeit_bis)}`} />
+                      })}
+                      {dayEntries.length > 3 && <div style={{ fontSize:9, color:'var(--mid)', textAlign:'center' }}>+{dayEntries.length-3}</div>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
+
+        {filtered.length === 0 && view === 'list'
           ? <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 40, textAlign: 'center', color: 'var(--mid)' }}>Keine Einträge gefunden.</div>
-          : (
+          : view === 'list' && (
             <div className="screen-only">
               {groups.map(g => {
               const open = openGroups.has(g.name)
