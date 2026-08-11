@@ -248,6 +248,20 @@ export default function AdminLiveIn() {
     setCaregiverFiles(await loadEntityFiles('caregivers', caregiverId))
   }
 
+  async function deleteClient(id: string, name: string) {
+    if (!confirm(`Klient „${name}" löschen? Alle zugehörigen Einsätze werden ebenfalls entfernt.`)) return
+    await getSupabase().from('live_in_shifts').delete().eq('client_id', id)
+    await getSupabase().from('clients').delete().eq('id', id)
+    await load()
+  }
+
+  async function deleteCaregiver(id: string, name: string) {
+    if (!confirm(`Betreuer „${name}" löschen?`)) return
+    await getSupabase().from('live_in_shifts').update({ caregiver_id: null }).eq('caregiver_id', id)
+    await getSupabase().from('caregivers').delete().eq('id', id)
+    await load()
+  }
+
   function getPublicUrl(path: string) {
     return getSupabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl
   }
@@ -538,15 +552,18 @@ export default function AdminLiveIn() {
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Klienten.</div>
               : clients.map(c => (
                 <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-                  <div onClick={() => openClientExpand(c)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                    <div>
+                  <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div onClick={() => openClientExpand(c)} style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
                         {c.haustier && <span style={{ fontSize: 12, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Haustier</span>}
                       </div>
                       {(c.street || c.city) && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.city].filter(Boolean).join(', ')}</div>}
                     </div>
-                    <span style={{ color: 'var(--mid)', fontSize: 14 }}>{expandedClientId === c.id ? '▲' : '▼'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 10 }}>
+                      <span onClick={() => openClientExpand(c)} style={{ color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>{expandedClientId === c.id ? '▲' : '▼'}</span>
+                      <button onClick={e => { e.stopPropagation(); deleteClient(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1 }}>×</button>
+                    </div>
                   </div>
                   {expandedClientId === c.id && (
                     <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
@@ -577,8 +594,8 @@ export default function AdminLiveIn() {
                 const cur = shifts.find(s => s.caregiver_id === c.id && s.start_date <= today && (!s.end_date || s.end_date >= today))
                 return (
                   <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-                    <div onClick={() => openCaregiverExpand(c)} style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                      <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div onClick={() => openCaregiverExpand(c)} style={{ minWidth: 0, flex: 1, cursor: 'pointer' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
                           {c.sprache && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>{c.sprache}</span>}
@@ -589,7 +606,10 @@ export default function AdminLiveIn() {
                           {cur ? `Aktuell bei: ${cur.client?.name || '–'}${cur.end_date ? ` (bis ${fmtDate(cur.end_date)})` : ''}` : 'Aktuell frei'}
                         </div>
                       </div>
-                      <span style={{ color: 'var(--mid)', fontSize: 14, flexShrink: 0, marginLeft: 10 }}>{expandedCaregiverId === c.id ? '▲' : '▼'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 10 }}>
+                        <span onClick={() => openCaregiverExpand(c)} style={{ color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>{expandedCaregiverId === c.id ? '▲' : '▼'}</span>
+                        <button onClick={e => { e.stopPropagation(); deleteCaregiver(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1 }}>×</button>
+                      </div>
                     </div>
                     {expandedCaregiverId === c.id && (
                       <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
