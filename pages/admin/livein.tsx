@@ -579,7 +579,7 @@ export default function AdminLiveIn() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 10 }}>
                       <span onClick={() => openClientExpand(c)} style={{ color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>{expandedClientId === c.id ? '▲' : '▼'}</span>
-                      <button onClick={e => { e.stopPropagation(); deleteClient(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1 }}>×</button>
+                      <button onClick={e => { e.stopPropagation(); deleteClient(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', fontSize: 20, padding: '0 6px', lineHeight: 1 }}>×</button>
                     </div>
                   </div>
                   {expandedClientId === c.id && (
@@ -640,7 +640,7 @@ export default function AdminLiveIn() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 10 }}>
                         <span onClick={() => openCaregiverExpand(c)} style={{ color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>{expandedCaregiverId === c.id ? '▲' : '▼'}</span>
-                        <button onClick={e => { e.stopPropagation(); deleteCaregiver(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1 }}>×</button>
+                        <button onClick={e => { e.stopPropagation(); deleteCaregiver(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', fontSize: 20, padding: '0 6px', lineHeight: 1 }}>×</button>
                       </div>
                     </div>
                     {expandedCaregiverId === c.id && (
