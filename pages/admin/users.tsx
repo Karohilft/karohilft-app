@@ -89,6 +89,18 @@ export default function AdminUsers() {
     await load()
   }
 
+  async function permanentDelete(id: string, name: string) {
+    if (!confirm(`„${name}" endgültig löschen? Diese Aktion kann NICHT rückgängig gemacht werden.`)) return
+    const { data: { session } } = await getSupabase().auth.getSession()
+    const res = await fetch('/api/admin/permanent-delete-caregiver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ id }),
+    })
+    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Fehler: ' + (j.error || res.statusText)); return }
+    await load()
+  }
+
   async function del(id: string) {
     if (!confirm('Betreuer archivieren? Der Login-Zugang wird entfernt. Tätigkeitsnachweise bleiben 7 Jahre gespeichert.')) return
     const { data: { session } } = await getSupabase().auth.getSession()
@@ -411,7 +423,10 @@ export default function AdminUsers() {
                   <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
                   {c.email && <div style={{ fontSize: 13, color: 'var(--mid)' }}>{c.email}</div>}
                 </div>
-                <button onClick={() => restore(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>Wiederherstellen</button>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => restore(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer' }}>Wiederherstellen</button>
+                  <button onClick={() => permanentDelete(c.id, c.name)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(196,90,90,.3)', background: '#fff', color: '#c45a5a', fontSize: 13, cursor: 'pointer' }}>Endgültig löschen</button>
+                </div>
               </div>
             ))}
           </div>

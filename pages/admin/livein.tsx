@@ -270,6 +270,18 @@ export default function AdminLiveIn() {
     await load()
   }
 
+  async function permanentDeleteClient(id: string, name: string) {
+    if (!confirm(`„${name}" endgültig löschen? Diese Aktion kann NICHT rückgängig gemacht werden.`)) return
+    const { data: { session } } = await getSupabase().auth.getSession()
+    const res = await fetch('/api/admin/permanent-delete-client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ id }),
+    })
+    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Fehler: ' + (j.error || res.statusText)); return }
+    await load()
+  }
+
   async function deleteCaregiver(id: string, name: string) {
     if (!confirm(`Betreuer „${name}" archivieren? Die Daten bleiben 7 Jahre gespeichert.`)) return
     await getSupabase().from('caregivers').update({ deleted_at: new Date().toISOString() }).eq('id', id)
@@ -278,6 +290,18 @@ export default function AdminLiveIn() {
 
   async function restoreCaregiver(id: string) {
     await getSupabase().from('caregivers').update({ deleted_at: null }).eq('id', id)
+    await load()
+  }
+
+  async function permanentDeleteCaregiver(id: string, name: string) {
+    if (!confirm(`„${name}" endgültig löschen? Diese Aktion kann NICHT rückgängig gemacht werden.`)) return
+    const { data: { session } } = await getSupabase().auth.getSession()
+    const res = await fetch('/api/admin/permanent-delete-caregiver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ id }),
+    })
+    if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Fehler: ' + (j.error || res.statusText)); return }
     await load()
   }
 
@@ -611,7 +635,10 @@ export default function AdminLiveIn() {
                 {showArchiveClients && archivedClients.map(c => (
                   <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
-                    <button onClick={() => restoreClient(c.id)} style={{ ...btnSm, flexShrink: 0 }}>Wiederherstellen</button>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button onClick={() => restoreClient(c.id)} style={{ ...btnSm }}>Wiederherstellen</button>
+                      <button onClick={() => permanentDeleteClient(c.id, c.name)} style={{ ...btnSm, border: '1.5px solid rgba(196,90,90,.3)', color: '#c45a5a' }}>Endgültig löschen</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -680,7 +707,10 @@ export default function AdminLiveIn() {
                 {showArchiveCaregivers && archivedCaregivers.map(c => (
                   <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
-                    <button onClick={() => restoreCaregiver(c.id)} style={{ ...btnSm, flexShrink: 0 }}>Wiederherstellen</button>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button onClick={() => restoreCaregiver(c.id)} style={{ ...btnSm }}>Wiederherstellen</button>
+                      <button onClick={() => permanentDeleteCaregiver(c.id, c.name)} style={{ ...btnSm, border: '1.5px solid rgba(196,90,90,.3)', color: '#c45a5a' }}>Endgültig löschen</button>
+                    </div>
                   </div>
                 ))}
               </div>
