@@ -48,7 +48,7 @@ export default function AdminClients() {
   const [uploadingDoc, setUploadingDoc] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token').order('name')
+    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token').neq('live_in', true).order('name')
     setClients((data as Client[]) || [])
     setLoading(false)
   }

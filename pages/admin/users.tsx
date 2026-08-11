@@ -29,7 +29,7 @@ export default function AdminUsers() {
   const [uploading, setUploading] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').neq('live_in', true).order('name')
     setCaregivers((data as Caregiver[]) || [])
     setLoading(false)
   }
