@@ -95,8 +95,8 @@ export default function AdminEinsatzplan() {
   async function load() {
     const past30 = addDays(todayStr(), -30)
     const [{ data: cgs }, { data: cls }, { data: sched }, { data: rls }, { data: acts }] = await Promise.all([
-      getSupabase().from('caregivers').select('id,name,absent,hidden').neq('role', 'admin').order('name'),
-      getSupabase().from('clients').select('id,name').order('name'),
+      getSupabase().from('caregivers').select('id,name,absent,hidden').neq('role', 'admin').neq('live_in', true).is('deleted_at', null).order('name'),
+      getSupabase().from('clients').select('id,name').neq('live_in', true).is('deleted_at', null).order('name'),
       getSupabase().from('schedule').select('id,caregiver_id,client_id,datum,zeit_von,zeit_bis,ort,series_id,cancelled_by,cancelled_at').gte('datum', past30).order('datum').order('zeit_von'),
       getSupabase().from('schedule_rules').select('id,caregiver_id,client_id,weekdays,zeit_von,zeit_bis,ort,start_date').order('zeit_von'),
       getSupabase().from('activities').select('caregiver_id,client_id,datum').gte('datum', past30),
