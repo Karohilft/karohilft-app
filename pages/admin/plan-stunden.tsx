@@ -30,6 +30,8 @@ type Activity = {
   client_name: string | null
   notiz: string | null
   caregiver_no_show: boolean | null
+  ausbezahlt: boolean | null
+  ausbezahlt_at: string | null
 }
 
 function calcHours(von: string, bis: string) {
@@ -55,7 +57,7 @@ export default function AdminStundenplan() {
   async function load() {
     const { data: d } = await getSupabase()
       .from('activities')
-      .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver_id,client_id,caregiver_name,client_name,notiz,caregiver_no_show,caregiver:caregivers(name),client:clients(name)')
+      .select('id,datum,zeit_von,zeit_bis,unterschrift,caregiver_id,client_id,caregiver_name,client_name,notiz,caregiver_no_show,ausbezahlt,ausbezahlt_at,caregiver:caregivers(name),client:clients(name)')
       .order('datum', { ascending: false })
     setEntries((d as any) || [])
     setLoading(false)
@@ -156,13 +158,31 @@ export default function AdminStundenplan() {
     })
   }
 
-  const groups: { name: string; items: Activity[]; hours: number }[] = []
+  const [selectedPayIds, setSelectedPayIds] = useState<Set<string>>(new Set())
+  const [openPaidGroups, setOpenPaidGroups] = useState<Set<string>>(new Set())
+
+  function togglePaySelect(id: string) {
+    setSelectedPayIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+
+  function togglePaidGroup(key: string) {
+    setOpenPaidGroups(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
+  }
+
+  async function markAusbezahlt(ids: string[]) {
+    if (!ids.length) return
+    const now = new Date().toISOString()
+    await getSupabase().from('activities').update({ ausbezahlt: true, ausbezahlt_at: now }).in('id', ids)
+    setSelectedPayIds(new Set())
+    await load()
+  }
+
+  const groups: { name: string; items: Activity[]; paidItems: Activity[]; hours: number }[] = []
   for (const e of filtered) {
     const name = (e.caregiver as any)?.name || e.caregiver_name || '–'
     let g = groups.find(g => g.name === name)
-    if (!g) { g = { name, items: [], hours: 0 }; groups.push(g) }
-    g.items.push(e)
-    g.hours += calcHours(e.zeit_von, e.zeit_bis)
+    if (!g) { g = { name, items: [], paidItems: [], hours: 0 }; groups.push(g) }
+    if (e.ausbezahlt) { g.paidItems.push(e) } else { g.items.push(e); g.hours += calcHours(e.zeit_von, e.zeit_bis) }
   }
   groups.sort((a, b) => a.name.localeCompare(b.name))
 
@@ -317,6 +337,20 @@ export default function AdminStundenplan() {
             <div className="screen-only">
               {groups.map(g => {
               const open = openGroups.has(g.name)
+              const groupSelectedIds = g.items.map(e => e.id).filter(id => selectedPayIds.has(id))
+
+              // Paid items grouped by payment date (day)
+              const paidByDate: { dateKey: string; label: string; items: Activity[]; hours: number }[] = []
+              for (const e of g.paidItems) {
+                const dk = e.ausbezahlt_at ? e.ausbezahlt_at.slice(0,10) : '?'
+                const label = e.ausbezahlt_at ? new Date(e.ausbezahlt_at).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '–'
+                let b = paidByDate.find(b => b.dateKey === dk)
+                if (!b) { b = { dateKey: dk, label, items: [], hours: 0 }; paidByDate.push(b) }
+                b.items.push(e)
+                b.hours += calcHours(e.zeit_von, e.zeit_bis)
+              }
+              paidByDate.sort((a, b) => b.dateKey.localeCompare(a.dateKey))
+
               return (
               <div key={g.name} style={{ marginBottom: 12 }}>
                 <button onClick={() => toggleGroup(g.name)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: '#fff', borderRadius: 'var(--r-md)', border: 'none', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', textAlign: 'left' }}>
@@ -328,8 +362,31 @@ export default function AdminStundenplan() {
                   <span style={{ fontWeight: 700, color: 'var(--rose)' }}>{Math.round(g.hours * 10) / 10}h</span>
                 </button>
                 {open && <div style={{ marginTop: 8 }}>
+                  {/* Ausbezahlen button */}
+                  {g.items.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', marginBottom: 4 }}>
+                      <button onClick={() => {
+                        const allIds = g.items.map(e => e.id)
+                        const allSelected = allIds.every(id => selectedPayIds.has(id))
+                        setSelectedPayIds(prev => {
+                          const n = new Set(prev)
+                          allIds.forEach(id => allSelected ? n.delete(id) : n.add(id))
+                          return n
+                        })
+                      }} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>
+                        Alle auswählen
+                      </button>
+                      {groupSelectedIds.length > 0 && (
+                        <button onClick={() => markAusbezahlt(groupSelectedIds)} style={{ fontSize: 12, padding: '4px 14px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', cursor: 'pointer', fontWeight: 500 }}>
+                          {groupSelectedIds.length} ausbezahlen
+                        </button>
+                      )}
+                    </div>
+                  )}
+
               {g.items.map(e => {
                 const h = calcHours(e.zeit_von, e.zeit_bis)
+                const sel = selectedPayIds.has(e.id)
                 if (editingId === e.id) {
                   return (
                     <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
@@ -356,27 +413,28 @@ export default function AdminStundenplan() {
                   )
                 }
                 return (
-                  <div key={e.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)' }}>
+                  <div key={e.id} onClick={() => togglePaySelect(e.id)} style={{ background: sel ? 'rgba(180,60,60,.05)' : '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', border: `1.5px solid ${sel ? 'var(--rose)' : 'transparent'}`, cursor: 'pointer' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 16 }}>
-                          {(e.caregiver as any)?.name || e.caregiver_name || '–'} → {(e.client as any)?.name || e.client_name || '–'}
-                        </div>
-                        <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 3 }}>
-                          {e.datum} · {hm(e.zeit_von)} – {hm(e.zeit_bis)}
-                        </div>
-                        {e.caregiver_no_show && (
-                          <div style={{ marginTop: 6 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#C0392B', background: 'rgba(192,57,43,.1)', padding: '3px 10px', borderRadius: 'var(--r-pill)' }}>Einsatz nicht durchgeführt</span>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <span style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${sel ? 'var(--rose)' : '#ccc'}`, background: sel ? 'var(--rose)' : '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                          {sel && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>
+                            {(e.client as any)?.name || e.client_name || '–'}
                           </div>
-                        )}
-                        {e.notiz && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 6, fontStyle: 'italic' }}>„{e.notiz}"</div>}
+                          <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>
+                            {new Date(e.datum + 'T00:00:00').toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}
+                          </div>
+                          {e.caregiver_no_show && <span style={{ fontSize: 11, fontWeight: 600, color: '#C0392B', background: 'rgba(192,57,43,.1)', padding: '2px 8px', borderRadius: 'var(--r-pill)', marginTop: 4, display: 'inline-block' }}>Nicht durchgeführt</span>}
+                          {e.notiz && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 4, fontStyle: 'italic' }}>„{e.notiz}"</div>}
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--rose)' }}>{h}h</div>
-                        {e.unterschrift && <img src={e.unterschrift} alt="Unterschrift" style={{ height: 28, marginTop: 4, opacity: 0.6 }} />}
-                        <div className="no-print" style={{ display: 'flex', gap: 6, marginTop: 6, justifyContent: 'flex-end' }}>
-                          <button onClick={() => edit(e)} style={{ padding: '4px 12px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 12, cursor: 'pointer' }}>Bearbeiten</button>
+                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 10 }}>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--rose)' }}>{h}h</div>
+                        {e.unterschrift && <img src={e.unterschrift} alt="Unterschrift" style={{ height: 24, marginTop: 3, opacity: 0.6 }} />}
+                        <div className="no-print" style={{ display: 'flex', gap: 6, marginTop: 4, justifyContent: 'flex-end' }} onClick={ev => ev.stopPropagation()}>
+                          <button onClick={() => edit(e)} style={{ padding: '3px 10px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 11, cursor: 'pointer' }}>Bearbeiten</button>
                           <button onClick={() => delEntry(e.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
                         </div>
                       </div>
@@ -384,6 +442,39 @@ export default function AdminStundenplan() {
                   </div>
                 )
               })}
+
+              {/* Ausbezahlt-Sektion */}
+              {paidByDate.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  {paidByDate.map(batch => {
+                    const bKey = g.name + '_' + batch.dateKey
+                    const bOpen = openPaidGroups.has(bKey)
+                    return (
+                      <div key={bKey}>
+                        <button onClick={() => togglePaidGroup(bKey)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 14px', background: 'rgba(28,24,20,.04)', borderRadius: 'var(--r-sm)', border: 'none', cursor: 'pointer', marginBottom: 4 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--mid)' }}>
+                            <span style={{ fontSize: 11, background: 'var(--sage)', color: '#fff', borderRadius: 'var(--r-pill)', padding: '1px 7px' }}>✓ Ausbezahlt</span>
+                            {batch.label} · {batch.items.length} Einsätze
+                          </span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)' }}>{Math.round(batch.hours * 10) / 10}h</span>
+                            <span style={{ fontSize: 11, color: 'var(--mid)' }}>{bOpen ? '▲' : '▼'}</span>
+                          </span>
+                        </button>
+                        {bOpen && batch.items.map(e => (
+                          <div key={e.id} style={{ background: 'rgba(28,24,20,.03)', borderRadius: 'var(--r-sm)', padding: '8px 14px', marginBottom: 4, opacity: 0.7, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--dark)' }}>{(e.client as any)?.name || e.client_name || '–'}</div>
+                              <div style={{ fontSize: 12, color: 'var(--mid)' }}>{new Date(e.datum + 'T00:00:00').toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })} · {hm(e.zeit_von)}–{hm(e.zeit_bis)}</div>
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)' }}>{calcHours(e.zeit_von, e.zeit_bis)}h</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
                 </div>}
               </div>
               )})}
