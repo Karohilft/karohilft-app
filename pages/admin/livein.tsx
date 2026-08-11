@@ -81,6 +81,7 @@ export default function AdminLiveIn() {
   // Client
   const [showNewClientForm, setShowNewClientForm] = useState(false)
   const [expandedClientId, setExpandedClientId] = useState<string | null>(null)
+  const [clientPanelTab, setClientPanelTab] = useState<'edit'|'files'>('edit')
   const [clientForm, setClientForm] = useState({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false })
   const [savingClient, setSavingClient] = useState(false)
   const [clientFiles, setClientFiles] = useState<{ name: string; path: string }[]>([])
@@ -89,6 +90,7 @@ export default function AdminLiveIn() {
   // Caregiver
   const [showNewCaregiverForm, setShowNewCaregiverForm] = useState(false)
   const [expandedCaregiverId, setExpandedCaregiverId] = useState<string | null>(null)
+  const [caregiverPanelTab, setCaregiverPanelTab] = useState<'edit'|'files'>('edit')
   const [caregiverForm, setCaregiverForm] = useState({ name: '', street: '', city: '', notes: '', sprache: '', fuehrerschein: false, raucher: false })
   const [savingCaregiver, setSavingCaregiver] = useState(false)
   const [caregiverFiles, setCaregiverFiles] = useState<{ name: string; path: string }[]>([])
@@ -567,28 +569,38 @@ export default function AdminLiveIn() {
             )}
             {clients.length === 0
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Klienten.</div>
-              : clients.map(c => (
-                <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div onClick={() => openClientExpand(c)} style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
-                        {c.haustier && <span style={{ fontSize: 12, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Haustier</span>}
-                      </div>
+              : clients.map(c => {
+                const panelOpen = expandedClientId === c.id
+                return (
+                <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
                       {(c.street || c.city) && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.city].filter(Boolean).join(', ')}</div>}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                        {c.haustier && <span style={{ fontSize: 11, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Haustier</span>}
+                        {c.raucher && <span style={{ fontSize: 11, background: 'rgba(28,24,20,.07)', color: 'var(--mid)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Raucher</span>}
+                        {c.zweite_person && <span style={{ fontSize: 11, background: 'rgba(28,24,20,.07)', color: 'var(--mid)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>2. Person</span>}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 10 }}>
-                      <span onClick={() => openClientExpand(c)} style={{ color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>{expandedClientId === c.id ? '▲' : '▼'}</span>
-                      <button onClick={e => { e.stopPropagation(); deleteClient(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', fontSize: 20, padding: '0 6px', lineHeight: 1 }}>×</button>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <button onClick={() => { if (panelOpen && clientPanelTab === 'edit') { setExpandedClientId(null) } else { openClientExpand(c); setClientPanelTab('edit') } }} style={{ ...btnSm, background: panelOpen && clientPanelTab === 'edit' ? 'var(--cream)' : '#fff' }}>Bearbeiten</button>
+                      <button onClick={async () => { if (panelOpen && clientPanelTab === 'files') { setExpandedClientId(null) } else { setExpandedClientId(c.id); setClientPanelTab('files'); setClientFiles(await loadEntityFiles('clients', c.id)) } }} style={{ ...btnSm, background: panelOpen && clientPanelTab === 'files' ? 'var(--cream)' : '#fff' }}>Dateien</button>
+                      <button onClick={() => deleteClient(c.id, c.name)} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', fontSize: 20, padding: '0 4px', lineHeight: 1 }}>×</button>
                     </div>
                   </div>
-                  {expandedClientId === c.id && (
-                    <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
+                  {panelOpen && clientPanelTab === 'edit' && (
+                    <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(28,24,20,.08)', display: 'grid', gap: 10 }}>
                       {clientFormFields(c.id)}
                     </div>
                   )}
+                  {panelOpen && clientPanelTab === 'files' && (
+                    <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(28,24,20,.08)' }}>
+                      <FileSection files={clientFiles} uploading={uploadingClient} onUpload={f => uploadClientFile(c.id, f)} onDelete={path => deleteClientFile(path, c.id)} />
+                    </div>
+                  )}
                 </div>
-              ))}
+              )})}
 
             {archivedClients.length > 0 && (
               <div style={{ marginTop: 20 }}>
@@ -624,28 +636,35 @@ export default function AdminLiveIn() {
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Betreuer.</div>
               : caregivers.map(c => {
                 const cur = shifts.find(s => s.caregiver_id === c.id && s.start_date <= today && (!s.end_date || s.end_date >= today))
+                const panelOpen = expandedCaregiverId === c.id
                 return (
-                  <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 8, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-                    <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div onClick={() => openCaregiverExpand(c)} style={{ minWidth: 0, flex: 1, cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</span>
-                          {c.sprache && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>{c.sprache}</span>}
-                          {c.fuehrerschein && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Führerschein</span>}
-                          {c.raucher && <span style={{ fontSize: 12, color: 'var(--mid)', background: 'rgba(28,24,20,.06)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Raucher</span>}
+                  <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '14px 18px', marginBottom: 10, boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
+                        <div style={{ fontSize: 13, color: cur ? 'var(--sage)' : 'var(--mid)', marginTop: 2 }}>
+                          {cur ? `Aktuell bei: ${cur.client?.name || '–'}` : 'Aktuell frei'}
                         </div>
-                        <div style={{ fontSize: 13, color: cur ? 'var(--sage)' : 'var(--mid)', marginTop: 3 }}>
-                          {cur ? `Aktuell bei: ${cur.client?.name || '–'}${cur.end_date ? ` (bis ${fmtDate(cur.end_date)})` : ''}` : 'Aktuell frei'}
+                        <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                          {c.sprache && <span style={{ fontSize: 11, background: 'rgba(28,24,20,.07)', color: 'var(--mid)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>{c.sprache}</span>}
+                          {c.fuehrerschein && <span style={{ fontSize: 11, background: 'rgba(28,24,20,.07)', color: 'var(--mid)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Führerschein</span>}
+                          {c.raucher && <span style={{ fontSize: 11, background: 'rgba(28,24,20,.07)', color: 'var(--mid)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Raucher</span>}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 10 }}>
-                        <span onClick={() => openCaregiverExpand(c)} style={{ color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>{expandedCaregiverId === c.id ? '▲' : '▼'}</span>
-                        <button onClick={e => { e.stopPropagation(); deleteCaregiver(c.id, c.name) }} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', fontSize: 20, padding: '0 6px', lineHeight: 1 }}>×</button>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <button onClick={() => { if (panelOpen && caregiverPanelTab === 'edit') { setExpandedCaregiverId(null) } else { openCaregiverExpand(c); setCaregiverPanelTab('edit') } }} style={{ ...btnSm, background: panelOpen && caregiverPanelTab === 'edit' ? 'var(--cream)' : '#fff' }}>Bearbeiten</button>
+                        <button onClick={async () => { if (panelOpen && caregiverPanelTab === 'files') { setExpandedCaregiverId(null) } else { setExpandedCaregiverId(c.id); setCaregiverPanelTab('files'); setCaregiverFiles(await loadEntityFiles('caregivers', c.id)) } }} style={{ ...btnSm, background: panelOpen && caregiverPanelTab === 'files' ? 'var(--cream)' : '#fff' }}>Dateien</button>
+                        <button onClick={() => deleteCaregiver(c.id, c.name)} style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', fontSize: 20, padding: '0 4px', lineHeight: 1 }}>×</button>
                       </div>
                     </div>
-                    {expandedCaregiverId === c.id && (
-                      <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(28,24,20,.07)', display: 'grid', gap: 10, paddingTop: 14 }}>
+                    {panelOpen && caregiverPanelTab === 'edit' && (
+                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(28,24,20,.08)', display: 'grid', gap: 10 }}>
                         {caregiverFormFields(c.id)}
+                      </div>
+                    )}
+                    {panelOpen && caregiverPanelTab === 'files' && (
+                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(28,24,20,.08)' }}>
+                        <FileSection files={caregiverFiles} uploading={uploadingCaregiver} onUpload={f => uploadCaregiverFile(c.id, f)} onDelete={path => deleteCaregiverFile(path, c.id)} />
                       </div>
                     )}
                   </div>
