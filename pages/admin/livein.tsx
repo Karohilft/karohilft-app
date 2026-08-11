@@ -99,15 +99,24 @@ export default function AdminLiveIn() {
   const [showBilled, setShowBilled] = useState(false)
   const [billingClientFilter, setBillingClientFilter] = useState('all')
 
+  const [archivedClients, setArchivedClients] = useState<LiveInClient[]>([])
+  const [archivedCaregivers, setArchivedCaregivers] = useState<LiveInCaregiver[]>([])
+  const [showArchiveClients, setShowArchiveClients] = useState(false)
+  const [showArchiveCaregivers, setShowArchiveCaregivers] = useState(false)
+
   async function load() {
-    const [{ data: cls }, { data: cgs }, { data: sh }] = await Promise.all([
-      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person').eq('live_in', true).order('name'),
-      getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).order('name'),
+    const [{ data: cls }, { data: cgs }, { data: sh }, { data: archCls }, { data: archCgs }] = await Promise.all([
+      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person').eq('live_in', true).is('deleted_at', null).order('name'),
+      getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).is('deleted_at', null).order('name'),
       getSupabase().from('live_in_shifts').select('id,client_id,caregiver_id,start_date,end_date,notiz,abgerechnet,caregiver:caregivers(name),client:clients(name)').order('start_date', { ascending: false }),
+      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person').eq('live_in', true).not('deleted_at', 'is', null).order('name'),
+      getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).not('deleted_at', 'is', null).order('name'),
     ])
     setClients((cls as any) || [])
     setCaregivers((cgs as any) || [])
     setShifts((sh as any) || [])
+    setArchivedClients((archCls as any) || [])
+    setArchivedCaregivers((archCgs as any) || [])
     setLoading(false)
   }
 
@@ -249,16 +258,24 @@ export default function AdminLiveIn() {
   }
 
   async function deleteClient(id: string, name: string) {
-    if (!confirm(`Klient „${name}" löschen? Alle zugehörigen Einsätze werden ebenfalls entfernt.`)) return
-    await getSupabase().from('live_in_shifts').delete().eq('client_id', id)
-    await getSupabase().from('clients').delete().eq('id', id)
+    if (!confirm(`Klient „${name}" archivieren? Die Daten bleiben 7 Jahre gespeichert.`)) return
+    await getSupabase().from('clients').update({ deleted_at: new Date().toISOString() }).eq('id', id)
+    await load()
+  }
+
+  async function restoreClient(id: string) {
+    await getSupabase().from('clients').update({ deleted_at: null }).eq('id', id)
     await load()
   }
 
   async function deleteCaregiver(id: string, name: string) {
-    if (!confirm(`Betreuer „${name}" löschen?`)) return
-    await getSupabase().from('live_in_shifts').update({ caregiver_id: null }).eq('caregiver_id', id)
-    await getSupabase().from('caregivers').delete().eq('id', id)
+    if (!confirm(`Betreuer „${name}" archivieren? Die Daten bleiben 7 Jahre gespeichert.`)) return
+    await getSupabase().from('caregivers').update({ deleted_at: new Date().toISOString() }).eq('id', id)
+    await load()
+  }
+
+  async function restoreCaregiver(id: string) {
+    await getSupabase().from('caregivers').update({ deleted_at: null }).eq('id', id)
     await load()
   }
 
@@ -572,6 +589,21 @@ export default function AdminLiveIn() {
                   )}
                 </div>
               ))}
+
+            {archivedClients.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <button onClick={() => setShowArchiveClients(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0, marginBottom: 10 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 15, color: 'var(--mid)' }}>Archiv ({archivedClients.length})</span>
+                  <span style={{ color: 'var(--mid)', fontSize: 12 }}>{showArchiveClients ? '▲' : '▼'}</span>
+                </button>
+                {showArchiveClients && archivedClients.map(c => (
+                  <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
+                    <button onClick={() => restoreClient(c.id)} style={{ ...btnSm, flexShrink: 0 }}>Wiederherstellen</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -619,6 +651,21 @@ export default function AdminLiveIn() {
                   </div>
                 )
               })}
+
+            {archivedCaregivers.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <button onClick={() => setShowArchiveCaregivers(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0, marginBottom: 10 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 15, color: 'var(--mid)' }}>Archiv ({archivedCaregivers.length})</span>
+                  <span style={{ color: 'var(--mid)', fontSize: 12 }}>{showArchiveCaregivers ? '▲' : '▼'}</span>
+                </button>
+                {showArchiveCaregivers && archivedCaregivers.map(c => (
+                  <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
+                    <button onClick={() => restoreCaregiver(c.id)} style={{ ...btnSm, flexShrink: 0 }}>Wiederherstellen</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

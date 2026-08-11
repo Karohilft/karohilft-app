@@ -46,10 +46,14 @@ export default function AdminClients() {
   const [showBilled, setShowBilled] = useState(false)
   const [docFiles, setDocFiles] = useState<{ name: string; path: string }[]>([])
   const [uploadingDoc, setUploadingDoc] = useState(false)
+  const [archived, setArchived] = useState<Client[]>([])
+  const [showArchive, setShowArchive] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token').neq('live_in', true).order('name')
+    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token').neq('live_in', true).is('deleted_at', null).order('name')
     setClients((data as Client[]) || [])
+    const { data: arch } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token').neq('live_in', true).not('deleted_at', 'is', null).order('name')
+    setArchived((arch as Client[]) || [])
     setLoading(false)
   }
 
@@ -82,10 +86,15 @@ export default function AdminClients() {
     setShowForm(true)
   }
 
-  async function del(id: string) {
-    if (!confirm('Klient löschen? Geplante Einsätze im Stundenplan werden ebenfalls gelöscht. Bereits erfasste Tätigkeitsnachweise bleiben aus Dokumentationspflicht erhalten.')) return
-    const { error } = await getSupabase().from('clients').delete().eq('id', id)
-    if (error) { alert('Löschen fehlgeschlagen: ' + error.message); return }
+  async function del(id: string, name: string) {
+    if (!confirm(`Klient „${name}" archivieren? Die Daten bleiben für 7 Jahre gespeichert.`)) return
+    const { error } = await getSupabase().from('clients').update({ deleted_at: new Date().toISOString() }).eq('id', id)
+    if (error) { alert('Fehler: ' + error.message); return }
+    await load()
+  }
+
+  async function restore(id: string) {
+    await getSupabase().from('clients').update({ deleted_at: null }).eq('id', id)
     await load()
   }
 
@@ -332,7 +341,7 @@ export default function AdminClients() {
                     <button onClick={() => { if (panelOpen && clientTab === 'dateien') { setOpenClientId(null) } else { setOpenClientId(c.id); setClientTab('dateien' as any); loadDocFiles(c.id) } }} style={{ ...btnStyle, background: panelOpen && clientTab === 'dateien' ? 'var(--cream)' : '#fff' }}>Dateien</button>
                     <button onClick={() => setPrintCard(c)} style={btnStyle}>Karte</button>
                     <button onClick={() => { if (panelOpen && clientTab === 'einsaetze') { setOpenClientId(null) } else { setOpenClientId(c.id); setClientTab('einsaetze'); loadActivities(c.id) } }} style={{ ...btnStyle, background: panelOpen && clientTab === 'einsaetze' ? 'var(--cream)' : '#fff' }}>Einsätze</button>
-                    <button onClick={() => del(c.id)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
+                    <button onClick={() => del(c.id, c.name)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
                   </div>
                 </div>
 
@@ -400,6 +409,25 @@ export default function AdminClients() {
               </div>
             )
           })}
+
+        {/* Archiv */}
+        {archived.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <button onClick={() => setShowArchive(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0, marginBottom: 10 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 16, color: 'var(--mid)' }}>Archiv ({archived.length})</span>
+              <span style={{ color: 'var(--mid)', fontSize: 12 }}>{showArchive ? '▲' : '▼'}</span>
+            </button>
+            {showArchive && archived.map(c => (
+              <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
+                  {c.city && <div style={{ fontSize: 13, color: 'var(--mid)' }}>{c.city}</div>}
+                </div>
+                <button onClick={() => restore(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>Wiederherstellen</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

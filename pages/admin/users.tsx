@@ -28,9 +28,14 @@ export default function AdminUsers() {
   const [files, setFiles] = useState<{ name: string }[]>([])
   const [uploading, setUploading] = useState(false)
 
+  const [archived, setArchived] = useState<Caregiver[]>([])
+  const [showArchive, setShowArchive] = useState(false)
+
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').neq('live_in', true).order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').neq('live_in', true).is('deleted_at', null).order('name')
     setCaregivers((data as Caregiver[]) || [])
+    const { data: arch } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').neq('live_in', true).not('deleted_at', 'is', null).order('name')
+    setArchived((arch as Caregiver[]) || [])
     setLoading(false)
   }
 
@@ -79,8 +84,13 @@ export default function AdminUsers() {
     setShowForm(true)
   }
 
+  async function restore(id: string) {
+    await getSupabase().from('caregivers').update({ deleted_at: null }).eq('id', id)
+    await load()
+  }
+
   async function del(id: string) {
-    if (!confirm('Betreuer löschen? Geplante Einsätze in der Einsatzplanung werden wieder als unbesetzt angezeigt und der Login-Zugang wird entfernt. Bereits erfasste Tätigkeitsnachweise bleiben erhalten.')) return
+    if (!confirm('Betreuer archivieren? Der Login-Zugang wird entfernt. Tätigkeitsnachweise bleiben 7 Jahre gespeichert.')) return
     const { data: { session } } = await getSupabase().auth.getSession()
     const res = await fetch('/api/admin/delete-caregiver', {
       method: 'POST',
@@ -387,6 +397,25 @@ export default function AdminUsers() {
             )}
             </div>
           ))}
+
+        {/* Archiv */}
+        {archived.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <button onClick={() => setShowArchive(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0, marginBottom: 10 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 16, color: 'var(--mid)' }}>Archiv ({archived.length})</span>
+              <span style={{ color: 'var(--mid)', fontSize: 12 }}>{showArchive ? '▲' : '▼'}</span>
+            </button>
+            {showArchive && archived.map(c => (
+              <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
+                  {c.email && <div style={{ fontSize: 13, color: 'var(--mid)' }}>{c.email}</div>}
+                </div>
+                <button onClick={() => restore(c.id)} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--dark)', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>Wiederherstellen</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
