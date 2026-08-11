@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import webpush from 'web-push'
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const webpush = require('web-push') as typeof import('web-push')
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
