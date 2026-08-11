@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ['web-push'],
+  experimental: { serverComponentsExternalPackages: ['web-push'] },
 }
 module.exports = nextConfig
