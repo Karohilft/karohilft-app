@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await resend.emails.send({
     from: 'Karohilft <noreply@karohilft.at>',
     to: 'office@karohilft.at',
-    subject: `🧪 Test: 24h-Betreuung läuft in 2 Wochen aus (${targetStr})`,
+    subject: `⚠️ 24h-Betreuung läuft in 2 Wochen aus (${targetStr})`,
     html: buildLiveinExpiryEmail(testShifts, targetStr),
   })
 
