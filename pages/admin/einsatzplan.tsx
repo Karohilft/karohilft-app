@@ -435,7 +435,11 @@ export default function AdminEinsatzplan() {
   async function delChecked() {
     if (checkedIds.size === 0) return
     if (!confirm(`${checkedIds.size} Termin(e) löschen?`)) return
-    await getSupabase().from('schedule').delete().in('id', Array.from(checkedIds))
+    const ids = Array.from(checkedIds)
+    const chunkSize = 100
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      await getSupabase().from('schedule').delete().in('id', ids.slice(i, i + chunkSize))
+    }
     setCheckedIds(new Set())
     await load()
   }
