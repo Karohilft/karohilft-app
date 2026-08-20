@@ -307,7 +307,7 @@ export default function AdminClients() {
             <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Klienten</h1>
           </div>
-          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
+          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
         </div>
 
         {showForm && (
@@ -332,7 +332,7 @@ export default function AdminClients() {
                 <input placeholder="Beziehung (z.B. Tochter)" value={form.kontakt_beziehung} onChange={e => setForm(f => ({ ...f, kontakt_beziehung: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
+                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
                 <button onClick={save} disabled={saving || !form.name} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving || !form.name ? 0.6 : 1 }}>{saving ? 'Speichern…' : (editingId ? 'Speichern' : 'Speichern')}</button>
               </div>
             </div>
