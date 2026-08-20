@@ -73,7 +73,7 @@ export default function AdminClients() {
     } else {
       await getSupabase().from('clients').insert(payload)
     }
-    setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
+    setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
     setEditingId(null)
     setShowForm(false)
     setSaving(false)
