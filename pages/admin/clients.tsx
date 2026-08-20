@@ -6,7 +6,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 import { hm } from '../../lib/time'
 
-type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null; verify_token: string | null }
+type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null; verify_token: string | null; kontakt_name: string | null; kontakt_telefon: string | null; kontakt_beziehung: string | null }
 type AbrActivity = { id: string; datum: string; zeit_von: string; zeit_bis: string; caregiver: { name: string } | null }
 
 function pickFile(onFile: (f: File) => void) {
@@ -36,7 +36,7 @@ export default function AdminClients() {
   const [printCard, setPrintCard] = useState<Client | null>(null)
   const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' })
+  const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
   const [openClientId, setOpenClientId] = useState<string | null>(null)
   const [clientTab, setClientTab] = useState<'daten' | 'einsaetze' | 'dateien'>('daten')
   const [clientActivities, setClientActivities] = useState<AbrActivity[]>([])
@@ -50,9 +50,9 @@ export default function AdminClients() {
   const [showArchive, setShowArchive] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token').neq('live_in', true).is('deleted_at', null).order('name')
+    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token,kontakt_name,kontakt_telefon,kontakt_beziehung').neq('live_in', true).is('deleted_at', null).order('name')
     setClients((data as Client[]) || [])
-    const { data: arch } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token').neq('live_in', true).not('deleted_at', 'is', null).order('name')
+    const { data: arch } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token,kontakt_name,kontakt_telefon,kontakt_beziehung').neq('live_in', true).not('deleted_at', 'is', null).order('name')
     setArchived((arch as Client[]) || [])
     setLoading(false)
   }
@@ -67,13 +67,13 @@ export default function AdminClients() {
   async function save() {
     if (!form.name) return
     setSaving(true)
-    const payload = { name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes, birthdate: form.birthdate || null }
+    const payload = { name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes, birthdate: form.birthdate || null, kontakt_name: form.kontakt_name || null, kontakt_telefon: form.kontakt_telefon || null, kontakt_beziehung: form.kontakt_beziehung || null }
     if (editingId) {
       await getSupabase().from('clients').update(payload).eq('id', editingId)
     } else {
       await getSupabase().from('clients').insert(payload)
     }
-    setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' })
+    setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
     setEditingId(null)
     setShowForm(false)
     setSaving(false)
@@ -81,7 +81,7 @@ export default function AdminClients() {
   }
 
   function edit(c: Client) {
-    setForm({ name: c.name, street: c.street || '', zip: c.zip || '', city: c.city || '', notes: c.notes || '', birthdate: c.birthdate || '' })
+    setForm({ name: c.name, street: c.street || '', zip: c.zip || '', city: c.city || '', notes: c.notes || '', birthdate: c.birthdate || '', kontakt_name: c.kontakt_name || '', kontakt_telefon: c.kontakt_telefon || '', kontakt_beziehung: c.kontakt_beziehung || '' })
     setEditingId(c.id)
     setShowForm(true)
   }
@@ -324,6 +324,12 @@ export default function AdminClients() {
                 <input type="date" value={form.birthdate} onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%' }} />
               </label>
               <textarea placeholder="Notizen" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, resize: 'vertical' }} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)', marginTop: 4 }}>Kontaktperson</div>
+              <input placeholder="Name (z.B. Maria Müller)" value={form.kontakt_name} onChange={e => setForm(f => ({ ...f, kontakt_name: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <input placeholder="Telefon" value={form.kontakt_telefon} onChange={e => setForm(f => ({ ...f, kontakt_telefon: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+                <input placeholder="Beziehung (z.B. Tochter)" value={form.kontakt_beziehung} onChange={e => setForm(f => ({ ...f, kontakt_beziehung: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
+              </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
                 <button onClick={save} disabled={saving || !form.name} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving || !form.name ? 0.6 : 1 }}>{saving ? 'Speichern…' : (editingId ? 'Speichern' : 'Speichern')}</button>
@@ -347,6 +353,7 @@ export default function AdminClients() {
                       {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
                       {formatCardNumber(c.card_number)}
                     </div>
+                    {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 3 }}>📞 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${c.kontakt_telefon}` : ''}</div>}
                   </div>
                   <div className="cl-btns" style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <button onClick={() => edit(c)} style={btnStyle}>Bearbeiten</button>
