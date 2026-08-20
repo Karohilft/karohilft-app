@@ -209,7 +209,7 @@ export default function AdminLiveIn() {
     }
     setExpandedClientId(null)
     setShowNewClientForm(false)
-    setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
+    setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
     setSavingClient(false)
     await load()
   }
@@ -389,7 +389,7 @@ export default function AdminLiveIn() {
           />
         )}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-          <button onClick={() => { setShowNewClientForm(false); setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }) }} style={btnS}>Abbrechen</button>
+          <button onClick={() => { setShowNewClientForm(false); setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }) }} style={btnS}>Abbrechen</button>
           <button onClick={() => saveClient(editingId)} disabled={savingClient || !clientForm.name} style={{ ...btnP, opacity: savingClient || !clientForm.name ? 0.6 : 1 }}>{savingClient ? 'Speichern…' : 'Speichern'}</button>
         </div>
       </>
@@ -591,7 +591,7 @@ export default function AdminLiveIn() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>24h-Klienten</h2>
-              <button onClick={() => { setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }); setClientFiles([]); setShowNewClientForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
+              <button onClick={() => { setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }); setClientFiles([]); setShowNewClientForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
             </div>
             {showNewClientForm && (
               <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)', display: 'grid', gap: 10 }}>
