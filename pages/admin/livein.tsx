@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
+import { formatPhone, normalizePhone } from '../../lib/phone'
 
 type LiveInClient = {
   id: string; name: string; street: string | null; city: string | null
@@ -201,7 +202,7 @@ export default function AdminLiveIn() {
   async function saveClient(editingId: string | null) {
     if (!clientForm.name) return
     setSavingClient(true)
-    const payload = { name: clientForm.name, street: clientForm.street || null, city: clientForm.city || null, notes: clientForm.notes || null, haustier: clientForm.haustier, haustier_details: clientForm.haustier_details || null, raucher: clientForm.raucher, zweite_person: clientForm.zweite_person, live_in: true, telefon: clientForm.telefon || null, kontakt_name: clientForm.kontakt_name || null, kontakt_telefon: clientForm.kontakt_telefon || null, kontakt_beziehung: clientForm.kontakt_beziehung || null }
+    const payload = { name: clientForm.name, street: clientForm.street || null, city: clientForm.city || null, notes: clientForm.notes || null, haustier: clientForm.haustier, haustier_details: clientForm.haustier_details || null, raucher: clientForm.raucher, zweite_person: clientForm.zweite_person, live_in: true, telefon: clientForm.telefon ? normalizePhone(clientForm.telefon) : null, kontakt_name: clientForm.kontakt_name || null, kontakt_telefon: clientForm.kontakt_telefon ? normalizePhone(clientForm.kontakt_telefon) : null, kontakt_beziehung: clientForm.kontakt_beziehung || null }
     if (editingId) {
       await getSupabase().from('clients').update(payload).eq('id', editingId)
     } else {
@@ -609,8 +610,8 @@ export default function AdminLiveIn() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
                       {(c.street || c.city) && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.city].filter(Boolean).join(', ')}</div>}
-                      {c.telefon && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>📞 {c.telefon}</div>}
-                      {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>👤 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${c.kontakt_telefon}` : ''}</div>}
+                      {c.telefon && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>📞 {formatPhone(c.telefon)}</div>}
+                      {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>👤 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${formatPhone(c.kontakt_telefon)}` : ''}</div>}
                       <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                         {c.haustier && <span style={{ fontSize: 11, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Haustier</span>}
                         {c.raucher && <span style={{ fontSize: 11, background: 'rgba(28,24,20,.07)', color: 'var(--mid)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Raucher</span>}

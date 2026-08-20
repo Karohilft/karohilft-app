@@ -5,6 +5,7 @@ import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 import { hm } from '../../lib/time'
+import { formatPhone, normalizePhone } from '../../lib/phone'
 
 type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null; verify_token: string | null; telefon: string | null; kontakt_name: string | null; kontakt_telefon: string | null; kontakt_beziehung: string | null }
 type AbrActivity = { id: string; datum: string; zeit_von: string; zeit_bis: string; caregiver: { name: string } | null }
@@ -67,7 +68,7 @@ export default function AdminClients() {
   async function save() {
     if (!form.name) return
     setSaving(true)
-    const payload = { name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes, birthdate: form.birthdate || null, telefon: form.telefon || null, kontakt_name: form.kontakt_name || null, kontakt_telefon: form.kontakt_telefon || null, kontakt_beziehung: form.kontakt_beziehung || null }
+    const payload = { name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes, birthdate: form.birthdate || null, telefon: form.telefon ? normalizePhone(form.telefon) : null, kontakt_name: form.kontakt_name || null, kontakt_telefon: form.kontakt_telefon ? normalizePhone(form.kontakt_telefon) : null, kontakt_beziehung: form.kontakt_beziehung || null }
     if (editingId) {
       await getSupabase().from('clients').update(payload).eq('id', editingId)
     } else {
@@ -354,8 +355,8 @@ export default function AdminClients() {
                       {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
                       {formatCardNumber(c.card_number)}
                     </div>
-                    {c.telefon && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>📞 {c.telefon}</div>}
-                    {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>👤 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${c.kontakt_telefon}` : ''}</div>}
+                    {c.telefon && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>📞 {formatPhone(c.telefon)}</div>}
+                    {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>👤 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${formatPhone(c.kontakt_telefon)}` : ''}</div>}
                   </div>
                   <div className="cl-btns" style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <button onClick={() => edit(c)} style={btnStyle}>Bearbeiten</button>
