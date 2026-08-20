@@ -6,7 +6,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 import { hm } from '../../lib/time'
 
-type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null; verify_token: string | null; kontakt_name: string | null; kontakt_telefon: string | null; kontakt_beziehung: string | null }
+type Client = { id: string; name: string; street: string; zip: string; city: string; notes: string; birthdate: string | null; card_number: number | null; verify_token: string | null; telefon: string | null; kontakt_name: string | null; kontakt_telefon: string | null; kontakt_beziehung: string | null }
 type AbrActivity = { id: string; datum: string; zeit_von: string; zeit_bis: string; caregiver: { name: string } | null }
 
 function pickFile(onFile: (f: File) => void) {
@@ -36,7 +36,7 @@ export default function AdminClients() {
   const [printCard, setPrintCard] = useState<Client | null>(null)
   const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
+  const [form, setForm] = useState({ name: '', street: '', zip: '', city: '', notes: '', birthdate: '', telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
   const [openClientId, setOpenClientId] = useState<string | null>(null)
   const [clientTab, setClientTab] = useState<'daten' | 'einsaetze' | 'dateien'>('daten')
   const [clientActivities, setClientActivities] = useState<AbrActivity[]>([])
@@ -50,9 +50,9 @@ export default function AdminClients() {
   const [showArchive, setShowArchive] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token,kontakt_name,kontakt_telefon,kontakt_beziehung').neq('live_in', true).is('deleted_at', null).order('name')
+    const { data } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token,telefon,kontakt_name,kontakt_telefon,kontakt_beziehung').neq('live_in', true).is('deleted_at', null).order('name')
     setClients((data as Client[]) || [])
-    const { data: arch } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token,kontakt_name,kontakt_telefon,kontakt_beziehung').neq('live_in', true).not('deleted_at', 'is', null).order('name')
+    const { data: arch } = await getSupabase().from('clients').select('id,name,street,zip,city,notes,birthdate,card_number,verify_token,telefon,kontakt_name,kontakt_telefon,kontakt_beziehung').neq('live_in', true).not('deleted_at', 'is', null).order('name')
     setArchived((arch as Client[]) || [])
     setLoading(false)
   }
@@ -67,7 +67,7 @@ export default function AdminClients() {
   async function save() {
     if (!form.name) return
     setSaving(true)
-    const payload = { name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes, birthdate: form.birthdate || null, kontakt_name: form.kontakt_name || null, kontakt_telefon: form.kontakt_telefon || null, kontakt_beziehung: form.kontakt_beziehung || null }
+    const payload = { name: form.name, street: form.street, zip: form.zip, city: form.city, notes: form.notes, birthdate: form.birthdate || null, telefon: form.telefon || null, kontakt_name: form.kontakt_name || null, kontakt_telefon: form.kontakt_telefon || null, kontakt_beziehung: form.kontakt_beziehung || null }
     if (editingId) {
       await getSupabase().from('clients').update(payload).eq('id', editingId)
     } else {
@@ -81,7 +81,7 @@ export default function AdminClients() {
   }
 
   function edit(c: Client) {
-    setForm({ name: c.name, street: c.street || '', zip: c.zip || '', city: c.city || '', notes: c.notes || '', birthdate: c.birthdate || '', kontakt_name: c.kontakt_name || '', kontakt_telefon: c.kontakt_telefon || '', kontakt_beziehung: c.kontakt_beziehung || '' })
+    setForm({ name: c.name, street: c.street || '', zip: c.zip || '', city: c.city || '', notes: c.notes || '', birthdate: c.birthdate || '', telefon: c.telefon || '', kontakt_name: c.kontakt_name || '', kontakt_telefon: c.kontakt_telefon || '', kontakt_beziehung: c.kontakt_beziehung || '' })
     setEditingId(c.id)
     setShowForm(true)
   }
@@ -320,6 +320,7 @@ export default function AdminClients() {
                 <input placeholder="PLZ" value={form.zip} onChange={e => setForm(f => ({ ...f, zip: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
                 <input placeholder="Ort" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
               </div>
+              <input placeholder="Telefon" value={form.telefon} onChange={e => setForm(f => ({ ...f, telefon: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
               <label style={{ fontSize: 13, color: 'var(--mid)' }}>Geburtsdatum
                 <input type="date" value={form.birthdate} onChange={e => setForm(f => ({ ...f, birthdate: e.target.value }))} style={{ display: 'block', marginTop: 4, padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, width: '100%' }} />
               </label>
@@ -353,7 +354,8 @@ export default function AdminClients() {
                       {c.birthdate && <>geb. {new Date(c.birthdate).toLocaleDateString('de-AT')} · </>}
                       {formatCardNumber(c.card_number)}
                     </div>
-                    {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 3 }}>📞 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${c.kontakt_telefon}` : ''}</div>}
+                    {c.telefon && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>📞 {c.telefon}</div>}
+                    {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>👤 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${c.kontakt_telefon}` : ''}</div>}
                   </div>
                   <div className="cl-btns" style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <button onClick={() => edit(c)} style={btnStyle}>Bearbeiten</button>

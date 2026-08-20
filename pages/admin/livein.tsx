@@ -5,7 +5,7 @@ import { getSupabase } from '../../lib/supabase'
 type LiveInClient = {
   id: string; name: string; street: string | null; city: string | null
   notes: string | null; haustier: boolean; haustier_details: string | null; raucher: boolean; zweite_person: boolean
-  kontakt_name: string | null; kontakt_telefon: string | null; kontakt_beziehung: string | null
+  telefon: string | null; kontakt_name: string | null; kontakt_telefon: string | null; kontakt_beziehung: string | null
 }
 type LiveInCaregiver = {
   id: string; name: string; street: string | null; city: string | null
@@ -83,7 +83,7 @@ export default function AdminLiveIn() {
   const [showNewClientForm, setShowNewClientForm] = useState(false)
   const [expandedClientId, setExpandedClientId] = useState<string | null>(null)
   const [clientPanelTab, setClientPanelTab] = useState<'edit'|'files'>('edit')
-  const [clientForm, setClientForm] = useState({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
+  const [clientForm, setClientForm] = useState({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, telefon: '', kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' })
   const [savingClient, setSavingClient] = useState(false)
   const [clientFiles, setClientFiles] = useState<{ name: string; path: string }[]>([])
   const [uploadingClient, setUploadingClient] = useState(false)
@@ -109,10 +109,10 @@ export default function AdminLiveIn() {
 
   async function load() {
     const [{ data: cls }, { data: cgs }, { data: sh }, { data: archCls }, { data: archCgs }] = await Promise.all([
-      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person,kontakt_name,kontakt_telefon,kontakt_beziehung').eq('live_in', true).is('deleted_at', null).order('name'),
+      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person,telefon,kontakt_name,kontakt_telefon,kontakt_beziehung').eq('live_in', true).is('deleted_at', null).order('name'),
       getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).is('deleted_at', null).order('name'),
       getSupabase().from('live_in_shifts').select('id,client_id,caregiver_id,start_date,end_date,notiz,abgerechnet,caregiver:caregivers(name),client:clients(name)').order('start_date', { ascending: false }),
-      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person,kontakt_name,kontakt_telefon,kontakt_beziehung').eq('live_in', true).not('deleted_at', 'is', null).order('name'),
+      getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person,telefon,kontakt_name,kontakt_telefon,kontakt_beziehung').eq('live_in', true).not('deleted_at', 'is', null).order('name'),
       getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).not('deleted_at', 'is', null).order('name'),
     ])
     setClients((cls as any) || [])
@@ -184,7 +184,7 @@ export default function AdminLiveIn() {
 
   async function openClientExpand(c: LiveInClient) {
     if (expandedClientId === c.id) { setExpandedClientId(null); return }
-    setClientForm({ name: c.name, street: c.street || '', city: c.city || '', notes: c.notes || '', haustier: c.haustier, haustier_details: c.haustier_details || '', raucher: c.raucher, zweite_person: c.zweite_person, kontakt_name: c.kontakt_name || '', kontakt_telefon: c.kontakt_telefon || '', kontakt_beziehung: c.kontakt_beziehung || '' })
+    setClientForm({ name: c.name, street: c.street || '', city: c.city || '', notes: c.notes || '', haustier: c.haustier, haustier_details: c.haustier_details || '', raucher: c.raucher, zweite_person: c.zweite_person, telefon: c.telefon || '', kontakt_name: c.kontakt_name || '', kontakt_telefon: c.kontakt_telefon || '', kontakt_beziehung: c.kontakt_beziehung || '' })
     setExpandedClientId(c.id)
     setShowNewClientForm(false)
     setClientFiles(await loadEntityFiles('clients', c.id))
@@ -201,7 +201,7 @@ export default function AdminLiveIn() {
   async function saveClient(editingId: string | null) {
     if (!clientForm.name) return
     setSavingClient(true)
-    const payload = { name: clientForm.name, street: clientForm.street || null, city: clientForm.city || null, notes: clientForm.notes || null, haustier: clientForm.haustier, haustier_details: clientForm.haustier_details || null, raucher: clientForm.raucher, zweite_person: clientForm.zweite_person, live_in: true, kontakt_name: clientForm.kontakt_name || null, kontakt_telefon: clientForm.kontakt_telefon || null, kontakt_beziehung: clientForm.kontakt_beziehung || null }
+    const payload = { name: clientForm.name, street: clientForm.street || null, city: clientForm.city || null, notes: clientForm.notes || null, haustier: clientForm.haustier, haustier_details: clientForm.haustier_details || null, raucher: clientForm.raucher, zweite_person: clientForm.zweite_person, live_in: true, telefon: clientForm.telefon || null, kontakt_name: clientForm.kontakt_name || null, kontakt_telefon: clientForm.kontakt_telefon || null, kontakt_beziehung: clientForm.kontakt_beziehung || null }
     if (editingId) {
       await getSupabase().from('clients').update(payload).eq('id', editingId)
     } else {
@@ -363,6 +363,7 @@ export default function AdminLiveIn() {
         <input placeholder="Name *" value={clientForm.name} onChange={e => setClientForm(f => ({ ...f, name: e.target.value }))} style={inp} />
         <input placeholder="Straße" value={clientForm.street} onChange={e => setClientForm(f => ({ ...f, street: e.target.value }))} style={inp} />
         <input placeholder="Ort" value={clientForm.city} onChange={e => setClientForm(f => ({ ...f, city: e.target.value }))} style={inp} />
+        <input placeholder="Telefon" value={clientForm.telefon} onChange={e => setClientForm(f => ({ ...f, telefon: e.target.value }))} style={inp} />
         <textarea placeholder="Notizen" value={clientForm.notes} onChange={e => setClientForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)', marginTop: 4 }}>Kontaktperson</div>
         <input placeholder="Name (z.B. Maria Müller)" value={clientForm.kontakt_name} onChange={e => setClientForm(f => ({ ...f, kontakt_name: e.target.value }))} style={inp} />
@@ -388,7 +389,7 @@ export default function AdminLiveIn() {
           />
         )}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-          <button onClick={() => { setShowNewClientForm(false); setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false }) }} style={btnS}>Abbrechen</button>
+          <button onClick={() => { setShowNewClientForm(false); setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }) }} style={btnS}>Abbrechen</button>
           <button onClick={() => saveClient(editingId)} disabled={savingClient || !clientForm.name} style={{ ...btnP, opacity: savingClient || !clientForm.name ? 0.6 : 1 }}>{savingClient ? 'Speichern…' : 'Speichern'}</button>
         </div>
       </>
@@ -590,7 +591,7 @@ export default function AdminLiveIn() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 18, color: 'var(--dark)', margin: 0 }}>24h-Klienten</h2>
-              <button onClick={() => { setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false }); setClientFiles([]); setShowNewClientForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
+              <button onClick={() => { setExpandedClientId(null); setClientForm({ name: '', street: '', city: '', notes: '', haustier: false, haustier_details: '', raucher: false, zweite_person: false, kontakt_name: '', kontakt_telefon: '', kontakt_beziehung: '' }); setClientFiles([]); setShowNewClientForm(v => !v) }} style={{ ...btnP, padding: '8px 16px', fontSize: 13 }}>+ Neu</button>
             </div>
             {showNewClientForm && (
               <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-md)', display: 'grid', gap: 10 }}>
@@ -608,7 +609,8 @@ export default function AdminLiveIn() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
                       {(c.street || c.city) && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{[c.street, c.city].filter(Boolean).join(', ')}</div>}
-                      {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>📞 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${c.kontakt_telefon}` : ''}</div>}
+                      {c.telefon && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>📞 {c.telefon}</div>}
+                      {c.kontakt_name && <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>👤 {c.kontakt_name}{c.kontakt_beziehung ? ` (${c.kontakt_beziehung})` : ''}{c.kontakt_telefon ? ` · ${c.kontakt_telefon}` : ''}</div>}
                       <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                         {c.haustier && <span style={{ fontSize: 11, background: 'rgba(180,60,60,.1)', color: 'var(--rose)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Haustier</span>}
                         {c.raucher && <span style={{ fontSize: 11, background: 'rgba(28,24,20,.07)', color: 'var(--mid)', borderRadius: 'var(--r-pill)', padding: '2px 8px' }}>Raucher</span>}
