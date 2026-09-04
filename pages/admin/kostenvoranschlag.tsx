@@ -27,7 +27,9 @@ export default function Kostenvoranschlag() {
   const docRef = useRef<HTMLDivElement>(null)
   const [form, setForm] = useState({
     klient: '',
-    adresse: '',
+    strasse: '',
+    plz: '',
+    ort: '',
     datum: new Date().toISOString().slice(0, 10),
     art: '24h' as '24h' | 'stunden',
     tagessatz: '',
@@ -197,7 +199,11 @@ export default function Kostenvoranschlag() {
 
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mid)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 }}>Klient</div>
             <input placeholder="Name des Klienten *" value={f.klient} onChange={e => setForm(f => ({ ...f, klient: e.target.value }))} style={inp} />
-            <input placeholder="Adresse" value={f.adresse} onChange={e => setForm(f => ({ ...f, adresse: e.target.value }))} style={inp} />
+            <input placeholder="Straße und Hausnummer" value={f.strasse} onChange={e => setForm(f => ({ ...f, strasse: e.target.value }))} style={inp} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input placeholder="PLZ" value={f.plz} onChange={e => setForm(f => ({ ...f, plz: e.target.value }))} style={{ ...inp, width: 90, flex: 'none' }} />
+              <input placeholder="Ort" value={f.ort} onChange={e => setForm(f => ({ ...f, ort: e.target.value }))} style={{ ...inp, flex: 1 }} />
+            </div>
             <input placeholder="Angebots-Nr." value={f.angebotsnr} onChange={e => setForm(f => ({ ...f, angebotsnr: e.target.value }))} style={inp} />
             <label style={{ fontSize: 13, color: 'var(--mid)' }}>Datum
               <input type="date" value={f.datum} onChange={e => setForm(f => ({ ...f, datum: e.target.value }))} style={{ ...inp, marginTop: 4 }} />
@@ -285,11 +291,12 @@ export default function Kostenvoranschlag() {
               </div>
             </div>
 
-            {(f.klient || f.adresse) && (
+            {(f.klient || f.strasse || f.plz || f.ort) && (
               <div style={{ background: '#FAF5EE', borderRadius: 10, padding: '14px 18px', marginBottom: 28, fontSize: 14 }}>
                 <div style={{ fontSize: 11, color: '#a09a94', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Für</div>
                 {f.klient && <div style={{ fontWeight: 600, fontSize: 16, color: '#1C1814' }}>{f.klient}</div>}
-                {f.adresse && <div style={{ color: '#6b6560', marginTop: 2 }}>{f.adresse}</div>}
+                {f.strasse && <div style={{ color: '#6b6560', marginTop: 2 }}>{f.strasse}</div>}
+                {(f.plz || f.ort) && <div style={{ color: '#6b6560' }}>{[f.plz, f.ort].filter(Boolean).join(' ')}</div>}
               </div>
             )}
 
