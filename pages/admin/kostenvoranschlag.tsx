@@ -31,7 +31,7 @@ export default function Kostenvoranschlag() {
     datum: new Date().toISOString().slice(0, 10),
     art: '24h' as '24h' | 'stunden',
     tagessatz: '',
-    tage: '30',
+    tage: '28',
     fahrtkosten: '',
     stunden_woche: '',
     wochen: '4',
