@@ -49,6 +49,9 @@ www.karohilft.at`
     attachments: [{ filename, content: pdfBuffer }],
   })
 
-  if (error) return res.status(500).json({ error })
+  if (error) {
+    console.error('Resend error:', JSON.stringify(error))
+    return res.status(500).json({ error })
+  }
   res.status(200).json({ ok: true })
 }

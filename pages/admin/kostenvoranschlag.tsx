@@ -52,24 +52,33 @@ export default function Kostenvoranschlag() {
     setSending(true)
     setSendResult(null)
     try {
-      const html2pdf = (await import('html2pdf.js')).default
+      const mod = await import('html2pdf.js')
+      const html2pdfFn = (mod.default ?? mod) as any
       const el = docRef.current!
-      const pdfBlob: Blob = await html2pdf().set({
+      const pdfBlob: Blob = await html2pdfFn().set({
         margin: [15, 18, 15, 18],
         filename: 'Kostenvoranschlag.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       }).from(el).outputPdf('blob')
       const arrayBuffer = await pdfBlob.arrayBuffer()
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+      const bytes = new Uint8Array(arrayBuffer)
+      let binary = ''
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+      const base64 = btoa(binary)
       const res = await fetch('/api/send-kva', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to: emailTo, klient: form.klient, angebotsnr: form.angebotsnr, anmerkungEmail: emailAnmerkung, pdfBase64: base64 }),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error('send-kva error:', body)
+      }
       setSendResult(res.ok ? 'ok' : 'err')
-    } catch {
+    } catch (e) {
+      console.error('sendEmail error:', e)
       setSendResult('err')
     }
     setSending(false)
