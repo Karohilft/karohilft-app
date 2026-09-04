@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 anbei erhalten Sie Ihren persönlichen Kostenvoranschlag${angebotsnr ? ` (${angebotsnr})` : ''}${klient ? ` für die Betreuung von ${klient}` : ''}.
 
-${anmerkungEmail ? anmerkungEmail + '\n\n' : ''}Bei Fragen stehen wir Ihnen gerne zur Verfügung.
+${anmerkungEmail ? anmerkungEmail + '\n\n' : ''}Sollten Sie Fragen haben oder das Angebot annehmen wollen, melden Sie sich bitte jederzeit gerne per E-Mail oder Telefon bei uns – wir sind für Sie da.
 
 Mit freundlichen Grüßen
 Ihr Karohilft-Team
