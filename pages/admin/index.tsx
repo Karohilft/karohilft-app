@@ -71,6 +71,13 @@ export default function AdminDashboard() {
           <div style={{ fontSize: 14, color: 'var(--mid)' }}>Live-In Schichten planen, Klienten & Betreuer verwalten</div>
         </button>
 
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mid)', letterSpacing: '.5px', marginTop: 28, marginBottom: 8 }}>ANGEBOTE</div>
+        <button onClick={() => router.push('/admin/kostenvoranschlag')}
+          style={{ width: '100%', background: '#fff', border: '1.5px solid rgba(28,24,20,.08)', borderRadius: 'var(--r-md)', padding: '18px 20px', textAlign: 'left', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all .2s' }}>
+          <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--dark)', marginBottom: 3 }}>Kostenvoranschlag</div>
+          <div style={{ fontSize: 14, color: 'var(--mid)' }}>Angebot erstellen & als PDF drucken</div>
+        </button>
+
         <button onClick={async () => { await getSupabase().auth.signOut(); router.replace('/login') }}
           style={{ marginTop: 24, width: '100%', padding: '14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: 'transparent', color: 'var(--mid)', fontSize: 15, cursor: 'pointer' }}>
           Abmelden
