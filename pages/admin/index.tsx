@@ -74,13 +74,13 @@ export default function AdminDashboard() {
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mid)', letterSpacing: '.5px', marginTop: 28, marginBottom: 8 }}>ANGEBOTE</div>
         <div style={{ display: 'grid', gap: 12 }}>
           {[{
-            href: '/admin/angebote',
-            title: 'Alle Angebote',
-            desc: 'Erstellte Kostenvoranschläge – Entwürfe & Versendete'
-          }, {
             href: '/admin/kostenvoranschlag',
             title: 'Neuer Kostenvoranschlag',
             desc: 'Angebot erstellen & per E-Mail versenden'
+          }, {
+            href: '/admin/angebote',
+            title: 'Alle Angebote',
+            desc: 'Erstellte Kostenvoranschläge – Entwürfe & Versendete'
           }].map(item => (
             <button key={item.href} onClick={() => router.push(item.href)}
               style={{ background: '#fff', border: '1.5px solid rgba(28,24,20,.08)', borderRadius: 'var(--r-md)', padding: '18px 20px', textAlign: 'left', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all .2s' }}>
