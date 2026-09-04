@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../../lib/supabase'
 
@@ -16,6 +16,12 @@ function fmt(n: number) {
 export default function Kostenvoranschlag() {
   const router = useRouter()
   const [auth, setAuth] = useState(false)
+  const [emailModal, setEmailModal] = useState(false)
+  const [emailTo, setEmailTo] = useState('')
+  const [emailAnmerkung, setEmailAnmerkung] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState<'ok' | 'err' | null>(null)
+  const docRef = useRef<HTMLDivElement>(null)
   const [form, setForm] = useState({
     klient: '',
     adresse: '',
@@ -41,6 +47,34 @@ export default function Kostenvoranschlag() {
 
   if (!auth) return null
 
+  async function sendEmail() {
+    if (!emailTo) return
+    setSending(true)
+    setSendResult(null)
+    try {
+      const html2pdf = (await import('html2pdf.js')).default
+      const el = docRef.current!
+      const pdfBlob: Blob = await html2pdf().set({
+        margin: [15, 18, 15, 18],
+        filename: 'Kostenvoranschlag.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      }).from(el).outputPdf('blob')
+      const arrayBuffer = await pdfBlob.arrayBuffer()
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+      const res = await fetch('/api/send-kva', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: emailTo, klient: form.klient, angebotsnr: form.angebotsnr, anmerkungEmail: emailAnmerkung, pdfBase64: base64 }),
+      })
+      setSendResult(res.ok ? 'ok' : 'err')
+    } catch {
+      setSendResult('err')
+    }
+    setSending(false)
+  }
+
   const f = form
   const tage = parseFloat(f.tage) || 0
   const tagessatz = parseFloat(f.tagessatz) || 0
@@ -64,6 +98,36 @@ export default function Kostenvoranschlag() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', padding: 20 }}>
+      {emailModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(28,24,20,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '28px 26px', width: '100%', maxWidth: 420, boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400, color: 'var(--dark)', marginBottom: 18 }}>Per E-Mail senden</div>
+            <div style={{ fontSize: 13, color: 'var(--mid)', marginBottom: 16, lineHeight: 1.6 }}>
+              Das PDF wird automatisch erstellt und als Anhang verschickt. Absender: <strong>office@karohilft.at</strong>
+            </div>
+            <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 12 }}>E-Mail-Adresse *
+              <input type="email" placeholder="empfaenger@beispiel.at" value={emailTo} onChange={e => setEmailTo(e.target.value)}
+                style={{ display: 'block', marginTop: 4, width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 8, fontSize: 14, fontFamily: 'Georgia,serif' }} />
+            </label>
+            <label style={{ fontSize: 13, color: 'var(--mid)', display: 'block', marginBottom: 20 }}>Individuelle Anmerkung (optional)
+              <textarea placeholder="z.B. Bitte um Rückmeldung bis…" value={emailAnmerkung} onChange={e => setEmailAnmerkung(e.target.value)} rows={3}
+                style={{ display: 'block', marginTop: 4, width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 8, fontSize: 14, fontFamily: 'Georgia,serif', resize: 'vertical' }} />
+            </label>
+            {sendResult === 'ok' && <div style={{ color: '#4a7a58', fontSize: 14, marginBottom: 12 }}>E-Mail erfolgreich gesendet!</div>}
+            {sendResult === 'err' && <div style={{ color: '#c0392b', fontSize: 14, marginBottom: 12 }}>Fehler beim Senden. Bitte erneut versuchen.</div>}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => { setEmailModal(false); setSendResult(null) }}
+                style={{ flex: 1, padding: '11px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: 'transparent', color: 'var(--mid)', fontSize: 14, cursor: 'pointer' }}>
+                Abbrechen
+              </button>
+              <button onClick={sendEmail} disabled={sending || !emailTo}
+                style={{ flex: 2, padding: '11px', borderRadius: 'var(--r-pill)', border: 'none', background: sending || !emailTo ? 'rgba(196,120,90,.4)' : 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 14, cursor: sending || !emailTo ? 'default' : 'pointer', boxShadow: sending || !emailTo ? 'none' : '0 4px 16px var(--rose-glow)' }}>
+                {sending ? 'Wird gesendet…' : 'Senden'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         @media print {
           @page { size: A4; margin: 15mm 18mm; }
@@ -77,9 +141,15 @@ export default function Kostenvoranschlag() {
       <div className="no-print" style={{ maxWidth: 1140, margin: '0 auto 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0 }}>←</button>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0 }}>Kostenvoranschlag</h1>
-        <button onClick={() => window.print()} style={{ marginLeft: 'auto', padding: '9px 22px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)' }}>
-          Als PDF drucken
-        </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+          <button onClick={() => { setEmailModal(true); setSendResult(null) }}
+            style={{ padding: '9px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--rose)', background: 'transparent', color: 'var(--rose)', fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
+            Per E-Mail senden
+          </button>
+          <button onClick={() => window.print()} style={{ padding: '9px 22px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)' }}>
+            Als PDF drucken
+          </button>
+        </div>
       </div>
 
       <div className="kva-layout" style={{ maxWidth: 1140, margin: '0 auto', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
@@ -161,7 +231,7 @@ export default function Kostenvoranschlag() {
 
         {/* Dokument-Vorschau */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="print-doc" style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '44px 48px', boxShadow: 'var(--shadow-md)', fontFamily: 'Georgia, serif', color: '#1C1814' }}>
+          <div ref={docRef} className="print-doc" style={{ background: '#fff', borderRadius: 'var(--r-lg)', padding: '44px 48px', boxShadow: 'var(--shadow-md)', fontFamily: 'Georgia, serif', color: '#1C1814' }}>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 36 }}>
               <img src="/karohilft-logo.svg" alt="Karohilft" style={{ height: 52 }} />
