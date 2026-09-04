@@ -44,9 +44,15 @@ export default function Kostenvoranschlag() {
   })
 
   useEffect(() => {
-    getSupabase().auth.getSession().then(({ data }) => {
-      if (!data.session) router.replace('/login')
-      else setAuth(true)
+    getSupabase().auth.getSession().then(async ({ data }) => {
+      if (!data.session) { router.replace('/login'); return }
+      setAuth(true)
+      // nächste laufende Nummer holen
+      const { data: row } = await getSupabase().rpc('nextval_kva_nummer')
+      if (row != null) {
+        const year = new Date().getFullYear()
+        setForm(f => ({ ...f, angebotsnr: `KVA-${year}-${String(row).padStart(2, '0')}` }))
+      }
     })
   }, [router])
 
@@ -80,6 +86,27 @@ export default function Kostenvoranschlag() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         console.error('send-kva error:', body)
+      }
+      if (res.ok) {
+        // In Datenbank speichern / Status auf versendet setzen
+        await getSupabase().from('kostenvoranschlaege').upsert({
+          angebotsnr: form.angebotsnr,
+          klient: form.klient || null,
+          strasse: form.strasse || null,
+          plz: form.plz || null,
+          ort: form.ort || null,
+          datum: form.datum,
+          art: form.art,
+          tagessatz: parseFloat(form.tagessatz) || null,
+          tage: parseInt(form.tage) || null,
+          fahrtkosten: parseFloat(form.fahrtkosten) || null,
+          stunden_woche: parseFloat(form.stunden_woche) || null,
+          wochen: parseInt(form.wochen) || null,
+          stundensatz: parseFloat(form.stundensatz) || null,
+          pflegestufe: parseInt(form.pflegestufe) || 0,
+          anmerkung: form.anmerkung || null,
+          status: 'versendet',
+        }, { onConflict: 'angebotsnr' })
       }
       setSendResult(res.ok ? 'ok' : 'err')
     } catch (e) {

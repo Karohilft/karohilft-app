@@ -72,11 +72,23 @@ export default function AdminDashboard() {
         </button>
 
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mid)', letterSpacing: '.5px', marginTop: 28, marginBottom: 8 }}>ANGEBOTE</div>
-        <button onClick={() => router.push('/admin/kostenvoranschlag')}
-          style={{ width: '100%', background: '#fff', border: '1.5px solid rgba(28,24,20,.08)', borderRadius: 'var(--r-md)', padding: '18px 20px', textAlign: 'left', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all .2s' }}>
-          <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--dark)', marginBottom: 3 }}>Kostenvoranschlag</div>
-          <div style={{ fontSize: 14, color: 'var(--mid)' }}>Angebot erstellen & als PDF drucken</div>
-        </button>
+        <div style={{ display: 'grid', gap: 12 }}>
+          {[{
+            href: '/admin/angebote',
+            title: 'Alle Angebote',
+            desc: 'Erstellte Kostenvoranschläge – Entwürfe & Versendete'
+          }, {
+            href: '/admin/kostenvoranschlag',
+            title: 'Neuer Kostenvoranschlag',
+            desc: 'Angebot erstellen & per E-Mail versenden'
+          }].map(item => (
+            <button key={item.href} onClick={() => router.push(item.href)}
+              style={{ background: '#fff', border: '1.5px solid rgba(28,24,20,.08)', borderRadius: 'var(--r-md)', padding: '18px 20px', textAlign: 'left', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all .2s' }}>
+              <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--dark)', marginBottom: 3 }}>{item.title}</div>
+              <div style={{ fontSize: 14, color: 'var(--mid)' }}>{item.desc}</div>
+            </button>
+          ))}
+        </div>
 
         <button onClick={async () => { await getSupabase().auth.signOut(); router.replace('/login') }}
           style={{ marginTop: 24, width: '100%', padding: '14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: 'transparent', color: 'var(--mid)', fontSize: 15, cursor: 'pointer' }}>
