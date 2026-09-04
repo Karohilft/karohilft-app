@@ -385,7 +385,7 @@ export default function Kostenvoranschlag() {
                 <tr>
                   <td style={{ padding: '16px 0 4px', borderTop: '2px solid #1C1814' }}>
                     <div style={{ fontWeight: 600, fontSize: 17, color: '#1C1814' }}>Gesamtkosten pro Monat</div>
-                    <div style={{ fontSize: 11, color: '#a09a94', marginTop: 2 }}>Alle Beträge inkl. USt. (Kleinunternehmerregelung)</div>
+                    <div style={{ fontSize: 11, color: '#a09a94', marginTop: 2 }}>Gemäß § 6 Abs. 1 Z 27 UStG wird keine Umsatzsteuer berechnet.</div>
                   </td>
                   <td style={{ padding: '16px 0 4px', borderTop: '2px solid #1C1814', textAlign: 'right', verticalAlign: 'top' }}>
                     <div style={{ fontSize: 24, fontWeight: 600, color: '#C4785A' }}>{fmt(gesamt)}</div>
