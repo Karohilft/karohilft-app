@@ -23,11 +23,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const begleittext = `Sehr geehrte Damen und Herren,
 
-anbei erhalten Sie Ihren persönlichen Kostenvoranschlag${angebotsnr ? ` (${angebotsnr})` : ''}${klient ? ` für die Betreuung von ${klient}` : ''}.
+vielen Dank für Ihr Interesse an unserer 24-Stunden-Betreuung.
 
-${anmerkungEmail ? anmerkungEmail + '\n\n' : ''}Sollten Sie Fragen haben oder das Angebot annehmen wollen, melden Sie sich bitte jederzeit gerne per E-Mail oder Telefon bei uns – wir sind für Sie da.
+Im Anhang finden Sie Ihren persönlichen Kostenvoranschlag${angebotsnr ? ` (${angebotsnr})` : ''}${klient ? ` für die Betreuung von ${klient}` : ''} mit allen wichtigen Informationen und Kosten übersichtlich zusammengefasst.
 
-Mit freundlichen Grüßen
+${anmerkungEmail ? anmerkungEmail + '\n\n' : ''}Sollten Sie Fragen haben oder unser Angebot annehmen wollen, melden Sie sich gerne jederzeit per E-Mail oder telefonisch bei uns. Wir sind gerne für Sie da.
+
+Herzliche Grüße
 Ihr Karohilft-Team
 
 –
