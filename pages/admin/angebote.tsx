@@ -108,6 +108,11 @@ export default function Angebote() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+                  <button onClick={() => router.push(`/admin/kostenvoranschlag?id=${item.id}`)}
+                    title="Ansehen / Bearbeiten"
+                    style={{ background: 'none', border: '1px solid rgba(28,24,20,.15)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: 'var(--mid)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    ✏ Öffnen
+                  </button>
                   <button onClick={() => toggleStatus(item)}
                     title={item.status === 'versendet' ? 'Als Entwurf markieren' : 'Als versendet markieren'}
                     style={{ background: 'none', border: '1px solid rgba(28,24,20,.15)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: 'var(--mid)', cursor: 'pointer', whiteSpace: 'nowrap' }}>

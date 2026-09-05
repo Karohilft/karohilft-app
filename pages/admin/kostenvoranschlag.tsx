@@ -47,11 +47,40 @@ export default function Kostenvoranschlag() {
     getSupabase().auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace('/login'); return }
       setAuth(true)
-      // nächste laufende Nummer holen
-      const { data: row } = await getSupabase().rpc('nextval_kva_nummer')
-      if (row != null) {
-        const year = new Date().getFullYear()
-        setForm(f => ({ ...f, angebotsnr: `KVA-${year}-${String(row).padStart(2, '0')}` }))
+      const id = new URLSearchParams(window.location.search).get('id')
+      if (id) {
+        // Vorhandenes Angebot laden
+        const { data: kva } = await getSupabase()
+          .from('kostenvoranschlaege')
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (kva) {
+          setForm({
+            klient: kva.klient ?? '',
+            strasse: kva.strasse ?? '',
+            plz: kva.plz ?? '',
+            ort: kva.ort ?? '',
+            datum: kva.datum ?? new Date().toISOString().slice(0, 10),
+            art: (kva.art === 'stunden' ? 'stunden' : '24h') as '24h' | 'stunden',
+            tagessatz: kva.tagessatz != null ? String(kva.tagessatz) : '',
+            tage: kva.tage != null ? String(kva.tage) : '28',
+            fahrtkosten: kva.fahrtkosten != null ? String(kva.fahrtkosten) : '',
+            stunden_woche: kva.stunden_woche != null ? String(kva.stunden_woche) : '',
+            wochen: kva.wochen != null ? String(kva.wochen) : '4',
+            stundensatz: kva.stundensatz != null ? String(kva.stundensatz) : '',
+            pflegestufe: kva.pflegestufe != null ? String(kva.pflegestufe) : '0',
+            anmerkung: kva.anmerkung ?? '',
+            angebotsnr: kva.angebotsnr ?? '',
+          })
+        }
+      } else {
+        // Neue KVA: nächste laufende Nummer holen
+        const { data: row } = await getSupabase().rpc('nextval_kva_nummer')
+        if (row != null) {
+          const year = new Date().getFullYear()
+          setForm(f => ({ ...f, angebotsnr: `KVA-${year}-${String(row).padStart(2, '0')}` }))
+        }
       }
     })
   }, [router])
