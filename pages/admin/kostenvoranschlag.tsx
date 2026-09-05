@@ -81,7 +81,20 @@ export default function Kostenvoranschlag() {
       const res = await fetch('/api/send-kva', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: emailTo, klient: form.klient, angebotsnr: form.angebotsnr, anmerkungEmail: emailAnmerkung, pdfBase64: base64 }),
+        body: JSON.stringify({
+          to: emailTo, klient: form.klient, angebotsnr: form.angebotsnr,
+          anmerkungEmail: emailAnmerkung, pdfBase64: base64,
+          strasse: form.strasse, plz: form.plz, ort: form.ort,
+          datum: form.datum, art: form.art,
+          tagessatz: parseFloat(form.tagessatz) || null,
+          tage: parseInt(form.tage) || null,
+          fahrtkosten: parseFloat(form.fahrtkosten) || null,
+          stunden_woche: parseFloat(form.stunden_woche) || null,
+          wochen: parseInt(form.wochen) || null,
+          stundensatz: parseFloat(form.stundensatz) || null,
+          pflegestufe: parseInt(form.pflegestufe) || 0,
+          anmerkung: form.anmerkung,
+        }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
