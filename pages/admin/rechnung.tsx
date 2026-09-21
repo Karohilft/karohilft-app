@@ -98,7 +98,7 @@ export default function Rechnung() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: emailTo,
-          klient: client.name,
+          klient: client?.name,
           rechnungsnr,
           pdfBase64: base64,
         }),

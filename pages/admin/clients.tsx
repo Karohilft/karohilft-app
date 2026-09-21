@@ -332,7 +332,7 @@ export default function AdminClients() {
                 <input placeholder="Telefon" value={form.kontakt_telefon} onChange={e => setForm(f => ({ ...f, kontakt_telefon: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
                 <input placeholder="Beziehung (z.B. Tochter)" value={form.kontakt_beziehung} onChange={e => setForm(f => ({ ...f, kontakt_beziehung: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
               </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)', marginTop: 4 }}>Abrechnung</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--mid)', marginTop: 4 }}>Stundensatz</div>
               <input type="number" placeholder="Stundensatz (€/Std)" value={form.stundensatz} onChange={e => setForm(f => ({ ...f, stundensatz: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
 
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
