@@ -404,10 +404,16 @@ export default function AdminClients() {
                               </div>
                             </div>
                           ))}
-                          <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                             <button onClick={() => setSelectedIds(new Set(clientActivities.map(a => a.id)))} style={{ padding: '6px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: 'pointer' }}>Alle auswählen</button>
-                            <button onClick={markAbgerechnet} disabled={selectedIds.size === 0 || abrechnung} style={{ padding: '8px 20px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: selectedIds.size === 0 || abrechnung ? 0.5 : 1 }}>
-                              {abrechnung ? 'Wird gespeichert…' : `${selectedIds.size > 0 ? selectedIds.size + ' ' : ''}Abgerechnet`}
+                            <button
+                              onClick={() => router.push(`/admin/rechnung?clientId=${c.id}&ids=${[...selectedIds].join(',')}`)}
+                              disabled={selectedIds.size === 0}
+                              style={{ padding: '8px 20px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 13, fontWeight: 500, cursor: selectedIds.size === 0 ? 'default' : 'pointer', opacity: selectedIds.size === 0 ? 0.5 : 1 }}>
+                              {selectedIds.size > 0 ? `${selectedIds.size} × Rechnung erstellen` : 'Rechnung erstellen'}
+                            </button>
+                            <button onClick={markAbgerechnet} disabled={selectedIds.size === 0 || abrechnung} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 13, cursor: 'pointer', opacity: selectedIds.size === 0 || abrechnung ? 0.5 : 1 }}>
+                              {abrechnung ? 'Wird gespeichert…' : 'Nur als abgerechnet markieren'}
                             </button>
                           </div>
                         </>
