@@ -576,12 +576,13 @@ export default function AdminLiveIn() {
                   <span style={{ color: 'var(--mid)', fontSize: 12 }}>{showBilled ? '▲' : '▼'}</span>
                 </button>
                 {showBilled && filteredBilled.map(s => (
-                  <div key={s.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', alignItems: 'center', gap: 12, borderLeft: '4px solid var(--sage)' }}>
+                  <div key={s.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 12, borderLeft: '4px solid var(--sage)' }}>
                     <span style={{ fontSize: 11, background: 'var(--sage)', color: '#fff', borderRadius: 'var(--r-pill)', padding: '2px 8px', flexShrink: 0 }}>✓</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{s.client?.name || '–'}</div>
                       <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{s.caregiver?.name || 'Kein Betreuer'} · {fmtDate(s.start_date)}{s.end_date ? ` – ${fmtDate(s.end_date)}` : ' (offen)'}</div>
                     </div>
+                    <button onClick={async () => { await getSupabase().from('live_in_shifts').update({ abgerechnet: false }).eq('id', s.id); await load() }} className="livein-no-print" title="Abrechnung rückgängig" style={{ background: 'none', border: '1px solid rgba(28,24,20,.15)', borderRadius: 'var(--r-pill)', color: 'var(--mid)', cursor: 'pointer', fontSize: 11, padding: '3px 10px', flexShrink: 0, whiteSpace: 'nowrap' }}>↩ Rückgängig</button>
                   </div>
                 ))}
               </div>
