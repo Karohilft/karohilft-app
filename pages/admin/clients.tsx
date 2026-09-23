@@ -99,6 +99,12 @@ export default function AdminClients() {
     await load()
   }
 
+  async function switchToLiveIn(id: string, name: string) {
+    if (!confirm(`„${name}" zur 24h-Betreuung wechseln? Der Klient verschwindet aus der Stundenbetreuung und erscheint in der 24h-Betreuung.`)) return
+    await getSupabase().from('clients').update({ live_in: true }).eq('id', id)
+    await load()
+  }
+
   async function permanentDelete(id: string, name: string) {
     if (!confirm(`„${name}" endgültig löschen? Diese Aktion kann NICHT rückgängig gemacht werden.`)) return
     const { data: { session } } = await getSupabase().auth.getSession()
@@ -367,6 +373,7 @@ export default function AdminClients() {
                     <button onClick={() => { if (panelOpen && clientTab === 'dateien') { setOpenClientId(null) } else { setOpenClientId(c.id); setClientTab('dateien' as any); loadDocFiles(c.id) } }} style={{ ...btnStyle, background: panelOpen && clientTab === 'dateien' ? 'var(--cream)' : '#fff' }}>Dateien</button>
                     <button onClick={() => setPrintCard(c)} style={btnStyle}>Karte</button>
                     <button onClick={() => { if (panelOpen && clientTab === 'einsaetze') { setOpenClientId(null) } else { setOpenClientId(c.id); setClientTab('einsaetze'); loadActivities(c.id) } }} style={{ ...btnStyle, background: panelOpen && clientTab === 'einsaetze' ? 'var(--cream)' : '#fff' }}>Einsätze</button>
+                    <button onClick={() => switchToLiveIn(c.id, c.name)} title="Zu 24h-Betreuung wechseln" style={{ padding: '5px 10px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>→ 24h</button>
                     <button onClick={() => del(c.id, c.name)} style={{ background: 'transparent', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}>×</button>
                   </div>
                 </div>

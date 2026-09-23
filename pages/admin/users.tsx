@@ -5,7 +5,7 @@ import { getSupabase } from '../../lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { formatCardNumber } from '../../lib/cardNumber'
 
-type Caregiver = { id: string; name: string; email: string; phone: string; role: string; card_type: string; birthdate: string | null; card_number: number | null; absent: boolean; hidden: boolean; languages: string | null; notes: string | null; verify_token: string | null }
+type Caregiver = { id: string; name: string; email: string; phone: string; role: string; card_type: string; birthdate: string | null; card_number: number | null; absent: boolean; hidden: boolean; languages: string | null; notes: string | null; verify_token: string | null; auch_live_in: boolean }
 
 function validUntil(cardType?: string) {
   const d = new Date()
@@ -19,7 +19,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '', auch_live_in: false })
   const [printCard, setPrintCard] = useState<Caregiver | null>(null)
   const [printSide, setPrintSide] = useState<'front' | 'back'>('front')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -32,9 +32,9 @@ export default function AdminUsers() {
   const [showArchive, setShowArchive] = useState(false)
 
   async function load() {
-    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').neq('live_in', true).is('deleted_at', null).order('name')
+    const { data } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token,auch_live_in').neq('live_in', true).is('deleted_at', null).order('name')
     setCaregivers((data as Caregiver[]) || [])
-    const { data: arch } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token').neq('live_in', true).not('deleted_at', 'is', null).order('name')
+    const { data: arch } = await getSupabase().from('caregivers').select('id,name,email,phone,role,card_type,birthdate,card_number,absent,hidden,languages,notes,verify_token,auch_live_in').neq('live_in', true).not('deleted_at', 'is', null).order('name')
     setArchived((arch as Caregiver[]) || [])
     setLoading(false)
   }
@@ -49,7 +49,7 @@ export default function AdminUsers() {
   async function save() {
     if (!form.name) return
     setSaving(true)
-    const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, card_type: form.card_type, birthdate: form.birthdate || null, languages: form.languages || null, notes: form.notes || null }
+    const payload = { name: form.name, email: form.email, phone: form.phone, role: form.role, card_type: form.card_type, birthdate: form.birthdate || null, languages: form.languages || null, notes: form.notes || null, auch_live_in: form.auch_live_in }
     const { data: { session } } = await getSupabase().auth.getSession()
     if (editingId) {
       const res = await fetch('/api/admin/update-caregiver', {
@@ -71,7 +71,7 @@ export default function AdminUsers() {
     } else {
       await getSupabase().from('caregivers').insert(payload)
     }
-    setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' })
+    setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '', auch_live_in: false })
     setEditingId(null)
     setShowForm(false)
     setSaving(false)
@@ -79,7 +79,7 @@ export default function AdminUsers() {
   }
 
   function edit(c: Caregiver) {
-    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, card_type: c.card_type || 'team', birthdate: c.birthdate || '', languages: Array.isArray(c.languages) ? c.languages.join(', ') : (c.languages || ''), notes: c.notes || '' })
+    setForm({ name: c.name, email: c.email || '', phone: c.phone || '', role: c.role, card_type: c.card_type || 'team', birthdate: c.birthdate || '', languages: Array.isArray(c.languages) ? c.languages.join(', ') : (c.languages || ''), notes: c.notes || '', auch_live_in: c.auch_live_in || false })
     setEditingId(c.id)
     setShowForm(true)
   }
@@ -320,7 +320,7 @@ export default function AdminUsers() {
             <button onClick={() => router.back()} style={{ background: 'transparent', border: 'none', color: 'var(--rose)', fontSize: 22, cursor: 'pointer', padding: 0, flexShrink: 0, lineHeight: 1 }}>←</button>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 26, color: 'var(--dark)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Betreuer</h1>
           </div>
-          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
+          <button onClick={() => { if (showForm) { setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '', auch_live_in: false }) }; setShowForm(!showForm) }} style={{ padding: '8px 16px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px var(--rose-glow)', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 10 }}>{showForm ? 'Schließen' : '+ Neu'}</button>
         </div>
 
         {showForm && (
@@ -344,8 +344,12 @@ export default function AdminUsers() {
               </label>
               <input placeholder="Sprachen (z.B. Deutsch, Englisch)" value={form.languages} onChange={e => setForm(f => ({ ...f, languages: e.target.value }))} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15 }} />
               <textarea placeholder="Sonstiges" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} style={{ padding: '11px 14px', border: '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', fontSize: 15, fontFamily: 'inherit', resize: 'vertical' }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', padding: '10px 14px', border: form.auch_live_in ? '1.5px solid var(--rose)' : '1.5px solid rgba(28,24,20,.12)', borderRadius: 'var(--r-sm)', background: form.auch_live_in ? 'rgba(180,60,60,.05)' : '#fff' }}>
+                <input type="checkbox" checked={form.auch_live_in} onChange={e => setForm(f => ({ ...f, auch_live_in: e.target.checked }))} style={{ width: 16, height: 16 }} />
+                <span style={{ fontSize: 14, color: form.auch_live_in ? 'var(--rose)' : 'var(--mid)', fontWeight: form.auch_live_in ? 600 : 400 }}>Auch für 24h-Betreuung verfügbar</span>
+              </label>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '' }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
+                <button onClick={() => { setShowForm(false); setEditingId(null); setForm({ name: '', email: '', phone: '', role: 'user', card_type: 'team', birthdate: '', languages: '', notes: '', auch_live_in: false }) }} style={{ padding: '10px 20px', borderRadius: 'var(--r-pill)', border: '1.5px solid rgba(28,24,20,.12)', background: '#fff', color: 'var(--mid)', cursor: 'pointer' }}>Abbrechen</button>
                 <button onClick={save} disabled={saving || !form.name} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', border: 'none', background: 'linear-gradient(145deg, var(--rose), var(--rose-dark))', color: '#fff', fontWeight: 500, cursor: 'pointer', opacity: saving || !form.name ? 0.6 : 1 }}>{saving ? 'Speichern…' : 'Speichern'}</button>
               </div>
             </div>
@@ -375,6 +379,7 @@ export default function AdminUsers() {
                     title="In Einsatzplanung ein-/ausblenden"
                     style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: c.hidden ? '#e67e22' : 'transparent', color: c.hidden ? '#fff' : 'var(--mid)', border: c.hidden ? 'none' : '1.5px solid rgba(28,24,20,.12)', cursor: 'pointer', lineHeight: 1.4 }}
                   >{c.hidden ? 'Ausgeblendet' : 'Sichtbar'}</button>
+                  {c.auch_live_in && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--r-pill)', background: 'rgba(180,60,60,.1)', color: 'var(--rose)', lineHeight: 1.4 }}>Auch 24h</span>}
                   {c.email && <button onClick={() => invite(c)} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 'var(--r-pill)', border: '1px solid var(--sage)', background: '#fff', color: 'var(--sage)', cursor: 'pointer', lineHeight: 1.3 }}>✉</button>}
                 </div>
                 {c.email && <div style={{ fontSize: 14, color: 'var(--mid)', marginTop: 2 }}>{c.email}</div>}

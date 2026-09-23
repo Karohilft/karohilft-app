@@ -11,6 +11,7 @@ type LiveInClient = {
 type LiveInCaregiver = {
   id: string; name: string; street: string | null; city: string | null
   notes: string | null; sprache: string | null; fuehrerschein: boolean; raucher: boolean
+  live_in?: boolean; auch_live_in?: boolean
 }
 type Shift = {
   id: string; client_id: string; caregiver_id: string | null
@@ -111,10 +112,10 @@ export default function AdminLiveIn() {
   async function load() {
     const [{ data: cls }, { data: cgs }, { data: sh }, { data: archCls }, { data: archCgs }] = await Promise.all([
       getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person,telefon,kontakt_name,kontakt_telefon,kontakt_beziehung').eq('live_in', true).is('deleted_at', null).order('name'),
-      getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).is('deleted_at', null).order('name'),
+      getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher,live_in,auch_live_in').or('live_in.eq.true,auch_live_in.eq.true').is('deleted_at', null).order('name'),
       getSupabase().from('live_in_shifts').select('id,client_id,caregiver_id,start_date,end_date,notiz,abgerechnet,caregiver:caregivers(name),client:clients(name)').order('start_date', { ascending: false }),
       getSupabase().from('clients').select('id,name,street,city,notes,haustier,haustier_details,raucher,zweite_person,telefon,kontakt_name,kontakt_telefon,kontakt_beziehung').eq('live_in', true).not('deleted_at', 'is', null).order('name'),
-      getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher').eq('live_in', true).not('deleted_at', 'is', null).order('name'),
+      getSupabase().from('caregivers').select('id,name,street,city,notes,sprache,fuehrerschein,raucher,live_in,auch_live_in').or('live_in.eq.true,auch_live_in.eq.true').not('deleted_at', 'is', null).order('name'),
     ])
     setClients((cls as any) || [])
     setCaregivers((cgs as any) || [])
@@ -565,6 +566,7 @@ export default function AdminLiveIn() {
                     <div style={{ fontSize: 13, color: 'var(--mid)', marginTop: 2 }}>{s.caregiver?.name || 'Kein Betreuer'} · {fmtDate(s.start_date)}{s.end_date ? ` – ${fmtDate(s.end_date)}` : ' (offen)'}</div>
                     {s.notiz && <div style={{ fontSize: 12, color: 'var(--mid)', marginTop: 2, fontStyle: 'italic' }}>{s.notiz}</div>}
                   </div>
+                  <button onClick={e => { e.stopPropagation(); delShift(s.id) }} className="livein-no-print" style={{ background: 'none', border: 'none', color: '#c45a5a', cursor: 'pointer', fontSize: 20, padding: '0 4px', flexShrink: 0, lineHeight: 1 }}>×</button>
                 </div>
               ))}
             {filteredBilled.length > 0 && (
@@ -670,9 +672,9 @@ export default function AdminLiveIn() {
                 {caregiverFormFields(null)}
               </div>
             )}
-            {caregivers.length === 0
+            {caregivers.filter(c => c.live_in).length === 0
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Betreuer.</div>
-              : caregivers.map(c => {
+              : caregivers.filter(c => c.live_in).map(c => {
                 const cur = shifts.find(s => s.caregiver_id === c.id && s.start_date <= today && (!s.end_date || s.end_date >= today))
                 const panelOpen = expandedCaregiverId === c.id
                 return (
@@ -709,13 +711,13 @@ export default function AdminLiveIn() {
                 )
               })}
 
-            {archivedCaregivers.length > 0 && (
+            {archivedCaregivers.filter(c => c.live_in).length > 0 && (
               <div style={{ marginTop: 20 }}>
                 <button onClick={() => setShowArchiveCaregivers(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0, marginBottom: 10 }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 15, color: 'var(--mid)' }}>Archiv ({archivedCaregivers.length})</span>
                   <span style={{ color: 'var(--mid)', fontSize: 12 }}>{showArchiveCaregivers ? '▲' : '▼'}</span>
                 </button>
-                {showArchiveCaregivers && archivedCaregivers.map(c => (
+                {showArchiveCaregivers && archivedCaregivers.filter(c => c.live_in).map(c => (
                   <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
