@@ -487,7 +487,7 @@ export default function AdminLiveIn() {
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Klienten.<br />Zuerst im Tab „Klienten" anlegen.</div>
               : clients.map(c => {
                 const cur = currentShift(c.id)
-                const past = shifts.filter(s => s.client_id === c.id && s.end_date && s.end_date < today).slice(0, 3)
+                const next = shifts.filter(s => s.client_id === c.id && s.start_date > today).slice(0, 3)
                 const daysLeft = cur?.end_date ? diffDays(today, cur.end_date) : null
                 return (
                   <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', marginBottom: 12, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', borderLeft: `4px solid ${cur?.caregiver_id ? 'var(--sage)' : 'var(--rose)'}` }}>
@@ -514,10 +514,11 @@ export default function AdminLiveIn() {
                       ) : (
                         <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 'var(--r-sm)', background: 'rgba(180,60,60,.06)', fontSize: 14, color: 'var(--rose)', fontWeight: 500 }}>Aktuell niemand zugeteilt</div>
                       )}
-                      {past.length > 0 && (
+                      {next.length > 0 && (
                         <div style={{ marginTop: 8 }}>
-                          {past.map(s => (
-                            <div key={s.id} onClick={() => openShiftEdit(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 14px', borderRadius: 'var(--r-sm)', fontSize: 13, color: 'var(--mid)', cursor: 'pointer', opacity: 0.7 }}>
+                          <div style={{ fontSize: 11, color: 'var(--mid)', padding: '2px 14px', marginBottom: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Nächste</div>
+                          {next.map(s => (
+                            <div key={s.id} onClick={() => openShiftEdit(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 14px', borderRadius: 'var(--r-sm)', fontSize: 13, color: 'var(--mid)', cursor: 'pointer' }}>
                               <span>{s.caregiver?.name || '–'}</span>
                               <span>{fmtDate(s.start_date)}–{s.end_date ? fmtDate(s.end_date) : '…'}</span>
                             </div>
