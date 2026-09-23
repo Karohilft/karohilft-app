@@ -673,9 +673,9 @@ export default function AdminLiveIn() {
                 {caregiverFormFields(null)}
               </div>
             )}
-            {caregivers.filter(c => c.live_in).length === 0
+            {caregivers.length === 0
               ? <div style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: 32, textAlign: 'center', color: 'var(--mid)', fontSize: 14 }}>Noch keine 24h-Betreuer.</div>
-              : caregivers.filter(c => c.live_in).map(c => {
+              : caregivers.map(c => {
                 const cur = shifts.find(s => s.caregiver_id === c.id && s.start_date <= today && (!s.end_date || s.end_date >= today))
                 const panelOpen = expandedCaregiverId === c.id
                 return (
@@ -712,13 +712,13 @@ export default function AdminLiveIn() {
                 )
               })}
 
-            {archivedCaregivers.filter(c => c.live_in).length > 0 && (
+            {archivedCaregivers.length > 0 && (
               <div style={{ marginTop: 20 }}>
                 <button onClick={() => setShowArchiveCaregivers(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0, marginBottom: 10 }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 15, color: 'var(--mid)' }}>Archiv ({archivedCaregivers.length})</span>
                   <span style={{ color: 'var(--mid)', fontSize: 12 }}>{showArchiveCaregivers ? '▲' : '▼'}</span>
                 </button>
-                {showArchiveCaregivers && archivedCaregivers.filter(c => c.live_in).map(c => (
+                {showArchiveCaregivers && archivedCaregivers.map(c => (
                   <div key={c.id} style={{ background: '#fff', borderRadius: 'var(--r-md)', padding: '12px 18px', marginBottom: 8, boxShadow: 'var(--shadow-sm)', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontWeight: 600, color: 'var(--dark)', fontSize: 15 }}>{c.name}</div>
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
